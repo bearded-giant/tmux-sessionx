@@ -58,6 +58,8 @@ handle_binds() {
 	bind_select_up=$(tmux_option_or_fallback "@sessionx-bind-select-up" "ctrl-n")
 	bind_select_down=$(tmux_option_or_fallback "@sessionx-bind-select-down" "ctrl-m")
 
+	bind_sort_asc=$(tmux_option_or_fallback "@sessionx-bind-sort-asc" "ctrl-u")
+	bind_sort_desc=$(tmux_option_or_fallback "@sessionx-bind-sort-desc" "ctrl-d")
 }
 
 input() {
@@ -96,7 +98,7 @@ handle_output() {
 		# except in unlikely and contrived situations (e.g.
 		# "/home/person/projects:0\ bash" could be a path on your filesystem.)
 		target=$(echo "$@" | tr -d '\n')
-	elif echo "$@" | grep ':' > /dev/null 2>&1 ; then
+	elif echo "$@" | grep ':' >/dev/null 2>&1; then
 		# Colon probably delimits session name and window number
 		session_name=$(echo "$@" | cut -d: -f1)
 		num=$(echo "$@" | cut -d: -f2 | cut -d' ' -f1)
@@ -158,11 +160,14 @@ handle_args() {
 	SCROLL_UP="$bind_scroll_up:preview-half-page-up"
 	SCROLL_DOWN="$bind_scroll_down:preview-half-page-down"
 
+	SORT_ASC="$bind_sort_asc:reload(sort)+change-preview(${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/preview.sh -w {1})"
+	SORT_DESC="$bind_sort_desc:reload(sort -r)+change-preview(${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/preview.sh -w {1})"
+
 	RENAME_SESSION_EXEC='bash -c '\'' printf >&2 "New name: ";read name; tmux rename-session -t {1} "${name}"; '\'''
 	RENAME_SESSION_RELOAD='bash -c '\'' tmux list-sessions | sed -E "s/:.*$//"; '\'''
 	RENAME_SESSION="$bind_rename_session:execute($RENAME_SESSION_EXEC)+reload($RENAME_SESSION_RELOAD)"
 
-	HEADER="$bind_accept=󰿄  $bind_kill_session=󱂧  $bind_rename_session=󰑕  $bind_configuration_mode=󱃖  $bind_window_mode=   $bind_new_window=󰇘  $bind_back=󰌍  $bind_tree_mode=󰐆   $bind_scroll_up=  $bind_scroll_down= "
+	HEADER="$bind_accept=󰿄  $bind_kill_session=󱂧  $bind_rename_session=󰑕  $bind_configuration_mode=󱃖  $bind_sort_asc=  $bind_sort_desc=  $bind_scroll_up=  $bind_scroll_down= "
 
 	args=(
 		--bind "$TMUXINATOR_MODE"
@@ -177,6 +182,8 @@ handle_args() {
 		--bind "$SELECT_UP"
 		--bind "$SELECT_DOWN"
 		--bind "$ACCEPT"
+		--bind "$SORT_ASC"
+		--bind "$SORT_DESC"
 		--bind "$SCROLL_UP"
 		--bind "$SCROLL_DOWN"
 		--bind "$RENAME_SESSION"
