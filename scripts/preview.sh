@@ -4,11 +4,12 @@
 # Kudos:
 #   https://stackoverflow.com/a/55247572/197789
 #   https://github.com/petobens/dotfiles/blob/master/tmux/tmux_tree
+set -euo pipefail
 
 single_mode() {
 	session_name="${1}"
 	if test "${DISPLAY_TMUXP}" -eq 1; then
-		if $(tmux has-session -t "${session_name}" >&/dev/null); then
+		if tmux has-session -t "${session_name}" 2>/dev/null; then
 			:
 		else
 			tmuxp_conf="${HOME}/.tmuxp/${session_name}.yaml"
@@ -113,4 +114,4 @@ window) window_mode "${SESSION}" ;;
 *) echo "Unknown mode \"${mode}\"" ;;
 esac
 
-exit $status
+exit 0

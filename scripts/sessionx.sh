@@ -1,75 +1,103 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-CURRENT="$(tmux display-message -p '#S')"
+# Validate required commands
+for cmd in tmux fzf; do
+    if ! command -v "$cmd" &> /dev/null; then
+        echo "Error: $cmd is required but not installed" >&2
+        exit 1
+    fi
+done
+
+# Get current session with error handling
+if ! CURRENT="$(tmux display-message -p '#S' 2>/dev/null)"; then
+    echo "Error: Not in a tmux session" >&2
+    exit 1
+fi
+
 Z_MODE="off"
 
-source scripts/tmuxinator.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/common.sh"
+source "${SCRIPT_DIR}/tmuxinator.sh"
 
-tmux_option_or_fallback() {
-	local option_value
-	option_value="$(tmux show-option -gqv "$1")"
-	if [ -z "$option_value" ]; then
-		option_value="$2"
+# Cache for tmux options to avoid repeated calls
+declare -A TMUX_OPTIONS_CACHE
+
+# Enhanced cached_tmux_option with caching
+cached_tmux_option() {
+	local option="$1"
+	local fallback="$2"
+	
+	# Check cache first
+	if [[ -n "${TMUX_OPTIONS_CACHE[$option]:-}" ]]; then
+		echo "${TMUX_OPTIONS_CACHE[$option]}"
+		return
 	fi
-	echo "$option_value"
+	
+	# Get value and cache it
+	local value
+	value=$(tmux_option_or_fallback "$option" "$fallback")
+	TMUX_OPTIONS_CACHE[$option]="$value"
+	echo "$value"
 }
 
 preview_settings() {
-	default_window_mode=$(tmux_option_or_fallback "@sessionx-window-mode" "off")
+	default_window_mode=$(cached_tmux_option "@sessionx-window-mode" "off")
 	if [[ "$default_window_mode" == "on" ]]; then
 		PREVIEW_OPTIONS="-w"
 	fi
-	default_window_mode=$(tmux_option_or_fallback "@sessionx-tree-mode" "off")
+	default_window_mode=$(cached_tmux_option "@sessionx-tree-mode" "off")
 	if [[ "$default_window_mode" == "on" ]]; then
 		PREVIEW_OPTIONS="-t"
 	fi
-	preview_location=$(tmux_option_or_fallback "@sessionx-preview-location" "top")
-	preview_ratio=$(tmux_option_or_fallback "@sessionx-preview-ratio" "75%")
-	preview_enabled=$(tmux_option_or_fallback "@sessionx-preview-enabled" "true")
+	preview_location=$(cached_tmux_option "@sessionx-preview-location" "top")
+	preview_ratio=$(cached_tmux_option "@sessionx-preview-ratio" "75%")
+	preview_enabled=$(cached_tmux_option "@sessionx-preview-enabled" "true")
 }
 
 window_settings() {
-	window_height=$(tmux_option_or_fallback "@sessionx-window-height" "75%")
-	window_width=$(tmux_option_or_fallback "@sessionx-window-width" "75%")
-	layout_mode=$(tmux_option_or_fallback "@sessionx-layout" "default")
-	prompt_icon=$(tmux_option_or_fallback "@sessionx-prompt" " ")
-	pointer_icon=$(tmux_option_or_fallback "@sessionx-pointer" "▶")
+	window_height=$(cached_tmux_option "@sessionx-window-height" "75%")
+	window_width=$(cached_tmux_option "@sessionx-window-width" "75%")
+	layout_mode=$(cached_tmux_option "@sessionx-layout" "default")
+	prompt_icon=$(cached_tmux_option "@sessionx-prompt" " ")
+	pointer_icon=$(cached_tmux_option "@sessionx-pointer" "▶")
 }
 
 handle_binds() {
-	bind_tmuxinator_list=$(tmux_option_or_fallback "@sessionx-bind-tmuxinator-list" "ctrl-/")
-	bind_tree_mode=$(tmux_option_or_fallback "@sessionx-bind-tree-mode" "ctrl-t")
-	bind_window_mode=$(tmux_option_or_fallback "@sessionx-bind-window-mode" "ctrl-w")
-	bind_configuration_mode=$(tmux_option_or_fallback "@sessionx-bind-configuration-path" "ctrl-x")
-	bind_rename_session=$(tmux_option_or_fallback "@sessionx-bind-rename-session" "ctrl-r")
-	additional_fzf_options=$(tmux_option_or_fallback "@sessionx-additional-options" "--color pointer:9,spinner:92,marker:46")
+	bind_tmuxinator_list=$(cached_tmux_option "@sessionx-bind-tmuxinator-list" "ctrl-/")
+	bind_tree_mode=$(cached_tmux_option "@sessionx-bind-tree-mode" "ctrl-t")
+	bind_window_mode=$(cached_tmux_option "@sessionx-bind-window-mode" "ctrl-w")
+	bind_configuration_mode=$(cached_tmux_option "@sessionx-bind-configuration-path" "ctrl-x")
+	bind_rename_session=$(cached_tmux_option "@sessionx-bind-rename-session" "ctrl-r")
+	additional_fzf_options=$(cached_tmux_option "@sessionx-additional-options" "--color pointer:9,spinner:92,marker:46")
 
-	bind_back=$(tmux_option_or_fallback "@sessionx-bind-back" "ctrl-b")
-	bind_new_window=$(tmux_option_or_fallback "@sessionx-bind-new-window" "ctrl-e")
-	bind_kill_session=$(tmux_option_or_fallback "@sessionx-bind-kill-session" "alt-bspace")
+	bind_back=$(cached_tmux_option "@sessionx-bind-back" "ctrl-b")
+	bind_new_window=$(cached_tmux_option "@sessionx-bind-new-window" "ctrl-e")
+	bind_kill_session=$(cached_tmux_option "@sessionx-bind-kill-session" "alt-bspace")
 
-	bind_exit=$(tmux_option_or_fallback "@sessionx-bind-abort" "esc")
-	bind_accept=$(tmux_option_or_fallback "@sessionx-bind-accept" "enter")
-	bind_delete_char=$(tmux_option_or_fallback "@sessionx-bind-delete-char" "bspace")
+	bind_exit=$(cached_tmux_option "@sessionx-bind-abort" "esc")
+	bind_accept=$(cached_tmux_option "@sessionx-bind-accept" "enter")
+	bind_delete_char=$(cached_tmux_option "@sessionx-bind-delete-char" "bspace")
 
-	bind_scroll_up=$(tmux_option_or_fallback "@sessionx-bind-scroll-up" "ctrl-p")
-	bind_scroll_down=$(tmux_option_or_fallback "@sessionx-bind-scroll-down" "ctrl-d")
+	bind_scroll_up=$(cached_tmux_option "@sessionx-bind-scroll-up" "ctrl-p")
+	bind_scroll_down=$(cached_tmux_option "@sessionx-bind-scroll-down" "ctrl-d")
 
-	bind_select_up=$(tmux_option_or_fallback "@sessionx-bind-select-up" "ctrl-n")
-	bind_select_down=$(tmux_option_or_fallback "@sessionx-bind-select-down" "ctrl-m")
+	bind_select_up=$(cached_tmux_option "@sessionx-bind-select-up" "ctrl-n")
+	bind_select_down=$(cached_tmux_option "@sessionx-bind-select-down" "ctrl-m")
 
-	bind_sort_asc=$(tmux_option_or_fallback "@sessionx-bind-sort-asc" "ctrl-u")
-	bind_sort_desc=$(tmux_option_or_fallback "@sessionx-bind-sort-desc" "ctrl-d")
+	bind_sort_asc=$(cached_tmux_option "@sessionx-bind-sort-asc" "ctrl-u")
+	bind_sort_desc=$(cached_tmux_option "@sessionx-bind-sort-desc" "ctrl-d")
 
-	bind_help=$(tmux_option_or_fallback "@sessionx-bind-help" "ctrl-h")
+	bind_help=$(cached_tmux_option "@sessionx-bind-help" "ctrl-h")
 }
 
 input() {
-	default_window_mode=$(tmux_option_or_fallback "@sessionx-window-mode" "off")
+	default_window_mode=$(cached_tmux_option "@sessionx-window-mode" "off")
 	if [[ "$default_window_mode" == "on" ]]; then
 		(tmux list-windows -a -F '#{session_name}:#{window_index} #{window_name}')
 	else
-		filter_current_session=$(tmux_option_or_fallback "@sessionx-filter-current" "true")
+		filter_current_session=$(cached_tmux_option "@sessionx-filter-current" "true")
 		# Get sessions sorted by activity (most recent first)
 		if [[ "$filter_current_session" == "true" ]]; then
 			(tmux list-sessions -F '#{session_activity}:#{session_name}' | sort -rn | cut -d: -f2 | grep -v "$CURRENT$") || echo "$CURRENT"
@@ -80,14 +108,15 @@ input() {
 }
 
 additional_input() {
-	sessions=$(tmux list-sessions | sed -E 's/:.*$//')
-	custom_paths=$(tmux_option_or_fallback "@sessionx-custom-paths" "")
+	sessions=$(tmux list-sessions -F '#{session_name}')
+	custom_paths=$(cached_tmux_option "@sessionx-custom-paths" "")
 	if [[ -z "$custom_paths" ]]; then
 		echo ""
 	else
 		clean_paths=$(echo "$custom_paths" | sed -E 's/ *, */,/g' | sed -E 's/^ *//' | sed -E 's/ *$//' | sed -E 's/ /✗/g')
-		for i in ${clean_paths//,/$IFS}; do
-			if [[ $sessions == *"${i##*/}"* ]]; then
+		IFS=',' read -ra paths_arr <<< "$clean_paths"
+		for i in "${paths_arr[@]}"; do
+			if [[ "$sessions" == *"${i##*/}"* ]]; then
 				continue
 			fi
 			echo "$i"
@@ -97,18 +126,26 @@ additional_input() {
 
 handle_output() {
 	if [ -d "$*" ]; then
-		# No special handling because there isn't a window number or window name present
-		# except in unlikely and contrived situations (e.g.
-		# "/home/person/projects:0\ bash" could be a path on your filesystem.)
-		target=$(echo "$@" | tr -d '\n')
+		target="${*//[$'\n\r']/}"
+		if ! validate_path "$target"; then
+			echo "Error: Invalid path" >&2
+			exit 1
+		fi
 	elif echo "$@" | grep ':' >/dev/null 2>&1; then
-		# Colon probably delimits session name and window number
-		session_name=$(echo "$@" | cut -d: -f1)
-		num=$(echo "$@" | cut -d: -f2 | cut -d' ' -f1)
-		target=$(echo "${session_name}:${num}" | tr -d '\n')
+		session_name="${1%%:*}"
+		num="${1#*:}"
+		num="${num%% *}"
+		target="${session_name}:${num}"
+		if ! validate_session_name "$session_name"; then
+			echo "Error: Invalid session name" >&2
+			exit 1
+		fi
 	else
-		# All tokens represent a session name
-		target=$(echo "$@" | tr -d '\n')
+		target="${*//[$'\n\r']/}"
+		if ! validate_session_name "$target"; then
+			echo "Error: Invalid session name" >&2
+			exit 1
+		fi
 	fi
 
 	if [[ -z "$target" ]]; then
@@ -119,12 +156,24 @@ handle_output() {
 		if is_known_tmuxinator_template "$target"; then
 			tmuxinator start "$target"
 		elif test -d "$target"; then
-			tmux new-session -ds "${target##*/}" -c "$target"
-			target="${target##*/}"
+			local session_name="${target##*/}"
+			if ! validate_session_name "$session_name"; then
+				echo "Error: Invalid session name derived from path" >&2
+				exit 1
+			fi
+			tmux new-session -ds "$session_name" -c "$target"
+			target="$session_name"
 		else
-			if [[ "$Z_MODE" == "on" ]]; then
-				z_target=$(zoxide query "$target")
-				tmux new-session -ds "$target" -c "$z_target" -n "$z_target"
+			if [[ "$Z_MODE" == "on" ]] && command -v zoxide &>/dev/null; then
+				if z_target=$(zoxide query "$target" 2>/dev/null); then
+					if ! validate_session_name "$target"; then
+						echo "Error: Invalid session name" >&2
+						exit 1
+					fi
+					tmux new-session -ds "$target" -c "$z_target" -n "$z_target"
+				else
+					tmux new-session -ds "$target"
+				fi
 			else
 				tmux new-session -ds "$target"
 			fi
@@ -137,21 +186,30 @@ handle_args() {
 	INPUT=$(input)
 	ADDITIONAL_INPUT=$(additional_input)
 	if [[ -n $ADDITIONAL_INPUT ]]; then
-		INPUT="$(additional_input)\n$INPUT"
+		ADDITIONAL=$(additional_input)
+	if [[ -n "$ADDITIONAL" ]]; then
+		INPUT="${ADDITIONAL}
+${INPUT}"
+	fi
 	fi
 	if [[ "$preview_enabled" == "true" ]]; then
 		PREVIEW_LINE="${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/preview.sh ${PREVIEW_OPTIONS} {}"
 	fi
-	Z_MODE=$(tmux_option_or_fallback "@sessionx-zoxide-mode" "off")
-	CONFIGURATION_PATH=$(tmux_option_or_fallback "@sessionx-x-path" "$HOME/.config")
+	Z_MODE=$(cached_tmux_option "@sessionx-zoxide-mode" "off")
+	CONFIGURATION_PATH=$(cached_tmux_option "@sessionx-x-path" "$HOME/.config")
 
 	TMUXINATOR_MODE="$bind_tmuxinator_list:reload(tmuxinator list | sed '1d')+change-preview(cat ~/.config/tmuxinator/{}.yml 2>/dev/null)"
 	TREE_MODE="$bind_tree_mode:change-preview(${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/preview.sh -t {1})"
-	CONFIGURATION_MODE="$bind_configuration_mode:reload(find $CONFIGURATION_PATH -mindepth 1 -maxdepth 1 -type d)+change-preview(ls {})"
+	# Validate CONFIGURATION_PATH to prevent command injection
+	if [[ ! -d "$CONFIGURATION_PATH" ]]; then
+		CONFIGURATION_PATH="$HOME/.config"
+	fi
+	CONFIGURATION_MODE="$bind_configuration_mode:reload(find '$CONFIGURATION_PATH' -mindepth 1 -maxdepth 1 -type d)+change-preview(ls {})"
 	WINDOWS_MODE="$bind_window_mode:reload(tmux list-windows -a -F '#{session_name}:#{window_index}')+change-preview(${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/preview.sh -w {1})"
 
 	NEW_WINDOW="$bind_new_window:reload(find $PWD -mindepth 1 -maxdepth 1 -type d)+change-preview(ls {})"
-	BACK="$bind_back:reload(echo -e \"${INPUT// /}\")+change-preview(${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/preview.sh {1})"
+	# Use printf instead of echo -e for better portability and safety
+	BACK="$bind_back:reload(printf '%s\n' \"${INPUT// /}\")+change-preview(${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/preview.sh {1})"
 	KILL_SESSION="$bind_kill_session:execute-silent(tmux kill-session -t {})+reload(${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/reload_sessions.sh)"
 
 	ACCEPT="$bind_accept:replace-query+print-query"
@@ -207,13 +265,14 @@ handle_args() {
 		--scrollbar '▌▐'
 	)
 
-	legacy=$(tmux_option_or_fallback "@sessionx-legacy-fzf-support" "off")
+	legacy=$(cached_tmux_option "@sessionx-legacy-fzf-support" "off")
 	if [[ "${legacy}" == "off" ]]; then
 		args+=(--border-label "Current session: \"$CURRENT\" ")
 		args+=(--bind 'focus:transform-preview-label:echo [ {} ]')
 	fi
 
-	eval "fzf_opts=($additional_fzf_options)"
+	# Safer array assignment without eval
+	IFS=' ' read -ra fzf_opts <<< "$additional_fzf_options"
 }
 
 run_plugin() {
@@ -221,7 +280,8 @@ run_plugin() {
 	window_settings
 	handle_binds
 	handle_args
-	RESULT=$(echo -e "${INPUT}" | sed -E 's/✗/ /g' | fzf-tmux "${fzf_opts[@]}" "${args[@]}")
+	# Use printf instead of echo -e and quote array expansions
+	RESULT=$(printf '%s\n' "${INPUT}" | sed -E 's/✗/ /g' | fzf-tmux "${fzf_opts[@]}" "${args[@]}")
 }
 
 run_plugin

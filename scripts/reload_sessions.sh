@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set -euo pipefail
+
 CURRENT_SESSION=$(tmux display-message -p '#S')
 # Get sessions sorted by activity (most recent first)
 SESSIONS=$(tmux list-sessions -F '#{session_activity}:#{session_name}' | sort -rn | cut -d: -f2)
