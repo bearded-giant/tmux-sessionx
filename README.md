@@ -99,7 +99,8 @@ set -g @sessionx-tmuxinator-mode 'off'
 
 ## Working with SessionX 👷
 
-Launching the plugin pops up an fzf-tmux "popup" with fizzy search over existing session (-current session).
+Launching the plugin pops up an fzf-tmux "popup" with fuzzy search over existing sessions (-current session).
+Sessions are sorted by most recently used (most recent at the top).
 If you insert a non-existing name and hit enter, a new session with that name will be created.
 
 - `alt+backspace` will delete the selected session
@@ -112,6 +113,7 @@ If you insert a non-existing name and hit enter, a new session with that name wi
 - `Ctrl-b` "back": reloads the first query. Useful when going into window or expand mode, to go back
 - `Ctrl-t` "tree": reloads the preview with the tree of sessions+windows familiar from the native session manager (C-S)
 - `Ctrl-/` "tmuxinator": fetches a list of tmuxinator sessions and previews them
+- `Ctrl-h` "help": displays a help screen with all keybindings
 - `?` toggles the preview pane
 
 ### Rebind keys:

@@ -60,6 +60,8 @@ handle_binds() {
 
 	bind_sort_asc=$(tmux_option_or_fallback "@sessionx-bind-sort-asc" "ctrl-u")
 	bind_sort_desc=$(tmux_option_or_fallback "@sessionx-bind-sort-desc" "ctrl-d")
+
+	bind_help=$(tmux_option_or_fallback "@sessionx-bind-help" "ctrl-h")
 }
 
 input() {
@@ -68,10 +70,11 @@ input() {
 		(tmux list-windows -a -F '#{session_name}:#{window_index} #{window_name}')
 	else
 		filter_current_session=$(tmux_option_or_fallback "@sessionx-filter-current" "true")
+		# Get sessions sorted by activity (most recent first)
 		if [[ "$filter_current_session" == "true" ]]; then
-			(tmux list-sessions | sed -E 's/:.*$//' | grep -v "$CURRENT$") || echo "$CURRENT"
+			(tmux list-sessions -F '#{session_activity}:#{session_name}' | sort -rn | cut -d: -f2 | grep -v "$CURRENT$") || echo "$CURRENT"
 		else
-			(tmux list-sessions | sed -E 's/:.*$//') || echo "$CURRENT"
+			(tmux list-sessions -F '#{session_activity}:#{session_name}' | sort -rn | cut -d: -f2) || echo "$CURRENT"
 		fi
 	fi
 }
@@ -164,10 +167,12 @@ handle_args() {
 	SORT_DESC="$bind_sort_desc:reload(sort -r)+change-preview(${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/preview.sh -w {1})"
 
 	RENAME_SESSION_EXEC='bash -c '\'' printf >&2 "New name: ";read name; tmux rename-session -t {1} "${name}"; '\'''
-	RENAME_SESSION_RELOAD='bash -c '\'' tmux list-sessions | sed -E "s/:.*$//"; '\'''
+	RENAME_SESSION_RELOAD='bash -c '\'' tmux list-sessions -F "#{session_activity}:#{session_name}" | sort -rn | cut -d: -f2; '\'''
 	RENAME_SESSION="$bind_rename_session:execute($RENAME_SESSION_EXEC)+reload($RENAME_SESSION_RELOAD)"
 
-	HEADER="$bind_accept=󰿄  $bind_kill_session=󱂧  $bind_rename_session=󰑕  $bind_configuration_mode=󱃖  $bind_sort_asc=  $bind_sort_desc=  $bind_scroll_up=  $bind_scroll_down= "
+	HELP="$bind_help:execute-silent(${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/help.sh | less -R)"
+
+	HEADER="Press [$bind_help] for help"
 
 	args=(
 		--bind "$TMUXINATOR_MODE"
@@ -187,6 +192,7 @@ handle_args() {
 		--bind "$SCROLL_UP"
 		--bind "$SCROLL_DOWN"
 		--bind "$RENAME_SESSION"
+		--bind "$HELP"
 		--bind '?:toggle-preview'
 		--bind 'change:first'
 		--exit-0
@@ -198,7 +204,6 @@ handle_args() {
 		-p "$window_width,$window_height"
 		--prompt "$prompt_icon"
 		--print-query
-		--tac
 		--scrollbar '▌▐'
 	)
 
