@@ -63,18 +63,18 @@ load_tmux_options() {
 		"@sessionx-legacy-fzf-support:off"
 	)
 	
-	# Get all options in one tmux call
-	local option_values
-	option_values=$(tmux show-options -gq $(printf '%s\n' "${options[@]}" | cut -d: -f1))
+	# Get all options that start with @sessionx in one call
+	local all_options
+	all_options=$(tmux show-options -gq | grep '^@sessionx' || true)
 	
 	# Parse and cache the results
 	while IFS= read -r line; do
-		if [[ "$line" =~ ^(@[^[:space:]]+)[[:space:]](.*)$ ]]; then
+		if [[ -n "$line" ]] && [[ "$line" =~ ^(@[^[:space:]]+)[[:space:]](.*)$ ]]; then
 			local key="${BASH_REMATCH[1]}"
 			local value="${BASH_REMATCH[2]}"
 			TMUX_OPTIONS_CACHE["$key"]="$value"
 		fi
-	done <<< "$option_values"
+	done <<< "$all_options"
 	
 	# Set defaults for any missing options
 	for opt in "${options[@]}"; do
@@ -158,6 +158,21 @@ input() {
 			(tmux list-sessions -F '#{session_activity}:#{session_name}' | sort -rn | cut -d: -f2) || echo "$CURRENT"
 		fi
 	fi
+}
+
+# Handle input for pre-built args mode
+handle_input() {
+	INPUT=$(input)
+	ADDITIONAL_INPUT=$(additional_input)
+	if [[ -n $ADDITIONAL_INPUT ]]; then
+		ADDITIONAL=$(additional_input)
+	if [[ -n "$ADDITIONAL" ]]; then
+		INPUT="${ADDITIONAL}
+${INPUT}"
+	fi
+	fi
+	# Fix the BACK binding to use the INPUT properly
+	BACK="ctrl-b:reload(printf '%s\n' \"${INPUT// /}\")+change-preview(${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/preview.sh {1})"
 }
 
 additional_input() {
@@ -331,15 +346,35 @@ ${INPUT}"
 }
 
 run_plugin() {
-	# Load all tmux options once
-	load_tmux_options
+	# Check if we have pre-built args from sessionx.tmux
+	local built_args
+	built_args=$(tmux show-option -gqv @sessionx-_built-args 2>/dev/null || true)
 	
-	preview_settings
-	window_settings
-	handle_binds
-	handle_args
+	if [[ -n "$built_args" ]]; then
+		# Use the pre-built args approach (upstream compatible)
+		eval "$built_args"
+		local built_extra
+		built_extra=$(tmux show-option -gqv @sessionx-_built-extra-options 2>/dev/null || true)
+		if [[ -n "$built_extra" ]]; then
+			eval "$built_extra"
+		fi
+		handle_input
+		args+=(--bind "$BACK")
+	else
+		# Fall back to our custom approach
+		load_tmux_options
+		preview_settings
+		window_settings
+		handle_binds
+		handle_args
+	fi
+	
 	# Use printf instead of echo -e and quote array expansions
-	RESULT=$(printf '%s\n' "${INPUT}" | sed -E 's/✗/ /g' | fzf-tmux "${fzf_opts[@]}" "${args[@]}")
+	if [[ -n "${fzf_opts[*]:-}" ]]; then
+		RESULT=$(printf '%s\n' "${INPUT}" | sed -E 's/✗/ /g' | fzf-tmux "${fzf_opts[@]}" "${args[@]}")
+	else
+		RESULT=$(printf '%s\n' "${INPUT}" | sed -E 's/✗/ /g' | fzf-tmux "${args[@]}")
+	fi
 }
 
 run_plugin

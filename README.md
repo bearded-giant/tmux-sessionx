@@ -1,6 +1,8 @@
-# Tmux SessionX
+# Tmux SessionX (Enhanced Fork)
 
 A fuzzy Tmux session manager with preview capabilities, deleting, renaming and more!
+
+> **Note:** This is an enhanced standalone fork of the original [tmux-sessionx](https://github.com/omerxx/tmux-sessionx) by omerxx. This version includes significant security improvements, performance optimizations, and additional features while maintaining compatibility with the original configuration.
 
 ![image](./img/sessionxv2.png)
 
@@ -17,7 +19,7 @@ A fuzzy Tmux session manager with preview capabilities, deleting, renaming and m
 Add this to your `.tmux.conf` and run `Ctrl-I` for TPM to install the plugin.
 
 ```conf
-set -g @plugin 'omerxx/tmux-sessionx'
+set -g @plugin 'bearded-giant/tmux-sessionx'
 ```
 
 ## Configure ⚙️
@@ -100,8 +102,17 @@ set -g @sessionx-tmuxinator-mode 'off'
 ## Working with SessionX 👷
 
 Launching the plugin pops up an fzf-tmux "popup" with fuzzy search over existing sessions (-current session).
-Sessions are sorted by most recently used (most recent at the top).
+**Sessions are sorted by most recently used (most recent at the top)** - an enhancement in this fork.
 If you insert a non-existing name and hit enter, a new session with that name will be created.
+
+### Key Enhancements in This Fork
+
+- **Security**: Input validation for paths and session names, protection against command injection
+- **Performance**: Batch loading of tmux options, intelligent caching to reduce IPC calls
+- **Reliability**: Comprehensive error handling and graceful exit code management
+- **Testing**: Full test suite including non-interactive tests (`bash test/run_tests.sh`)
+- **Help System**: Enhanced help display with `Ctrl-h` showing all available keybindings
+- **Session Sorting**: Sessions automatically sorted by last accessed time
 
 - `alt+backspace` will delete the selected session
 - `Ctrl-u` scroll preview up
@@ -187,12 +198,38 @@ set -g @sessionx-bind-tmuxinator-list 'alt-t'
 ```
 
 
+## Testing 🧪
+
+This fork includes a comprehensive test suite:
+
+```bash
+# Run all tests
+bash test/run_tests.sh
+
+# Run non-interactive tests only
+bash test/test_non_interactive.sh
+```
+
+For manual testing instructions, see [TESTING.md](./TESTING.md).
+
 ## WARNING ⚠️
 
 - If you're running `fzf` lower than [0.35.0](https://github.com/junegunn/fzf/releases/tag/0.35.0) there are a few missing missing features that might break the plugin. Either consider upgrading or add `@sessionx-legacy-fzf-support 'on'` to your config (see [configuration](#additional-configuration-options))
 - This plugin is not designed to be used outside Tmux, although PRs are happily recieved!
 
+## Development Notes 📝
+
+This fork is maintained as a standalone project with a focus on:
+- Security and reliability improvements
+- Performance optimizations
+- Enhanced user experience
+- Comprehensive testing
+
+Future development will continue to streamline session management while maintaining backward compatibility where possible.
+
 ## Thanks ❤️
+
+Based on the original [tmux-sessionx](https://github.com/omerxx/tmux-sessionx) by omerxx.
 
 Inspired by these:
 
