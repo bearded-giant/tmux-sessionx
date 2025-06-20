@@ -194,6 +194,8 @@ ${INPUT}"
 	fi
 	if [[ "$preview_enabled" == "true" ]]; then
 		PREVIEW_LINE="${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/preview.sh ${PREVIEW_OPTIONS} {}"
+	else
+		PREVIEW_LINE=""
 	fi
 	Z_MODE=$(cached_tmux_option "@sessionx-zoxide-mode" "off")
 	CONFIGURATION_PATH=$(cached_tmux_option "@sessionx-x-path" "$HOME/.config")
