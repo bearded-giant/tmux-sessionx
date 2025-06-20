@@ -24,22 +24,75 @@ source "${SCRIPT_DIR}/tmuxinator.sh"
 # Cache for tmux options to avoid repeated calls
 declare -A TMUX_OPTIONS_CACHE
 
+# Batch load all tmux options at once
+load_tmux_options() {
+	local options=(
+		"@sessionx-window-mode:off"
+		"@sessionx-tree-mode:off"
+		"@sessionx-preview-location:top"
+		"@sessionx-preview-ratio:75%"
+		"@sessionx-preview-enabled:true"
+		"@sessionx-window-height:75%"
+		"@sessionx-window-width:75%"
+		"@sessionx-layout:default"
+		"@sessionx-prompt: "
+		"@sessionx-pointer:▶"
+		"@sessionx-bind-tmuxinator-list:ctrl-/"
+		"@sessionx-bind-tree-mode:ctrl-t"
+		"@sessionx-bind-window-mode:ctrl-w"
+		"@sessionx-bind-configuration-path:ctrl-x"
+		"@sessionx-bind-rename-session:ctrl-r"
+		"@sessionx-additional-options:--color pointer:9,spinner:92,marker:46"
+		"@sessionx-bind-back:ctrl-b"
+		"@sessionx-bind-new-window:ctrl-e"
+		"@sessionx-bind-kill-session:alt-bspace"
+		"@sessionx-bind-abort:esc"
+		"@sessionx-bind-accept:enter"
+		"@sessionx-bind-delete-char:bspace"
+		"@sessionx-bind-scroll-up:ctrl-p"
+		"@sessionx-bind-scroll-down:ctrl-d"
+		"@sessionx-bind-select-up:ctrl-n"
+		"@sessionx-bind-select-down:ctrl-m"
+		"@sessionx-bind-sort-asc:ctrl-u"
+		"@sessionx-bind-sort-desc:ctrl-d"
+		"@sessionx-bind-help:ctrl-h"
+		"@sessionx-filter-current:true"
+		"@sessionx-custom-paths:"
+		"@sessionx-zoxide-mode:off"
+		"@sessionx-x-path:$HOME/.config"
+		"@sessionx-legacy-fzf-support:off"
+	)
+	
+	# Get all options in one tmux call
+	local option_values
+	option_values=$(tmux show-options -gq $(printf '%s\n' "${options[@]}" | cut -d: -f1))
+	
+	# Parse and cache the results
+	while IFS= read -r line; do
+		if [[ "$line" =~ ^(@[^[:space:]]+)[[:space:]](.*)$ ]]; then
+			local key="${BASH_REMATCH[1]}"
+			local value="${BASH_REMATCH[2]}"
+			TMUX_OPTIONS_CACHE["$key"]="$value"
+		fi
+	done <<< "$option_values"
+	
+	# Set defaults for any missing options
+	for opt in "${options[@]}"; do
+		local key="${opt%%:*}"
+		local default="${opt#*:}"
+		if [[ -z "${TMUX_OPTIONS_CACHE[$key]:-}" ]]; then
+			TMUX_OPTIONS_CACHE["$key"]="$default"
+		fi
+	done
+}
+
 # Enhanced cached_tmux_option with caching
 cached_tmux_option() {
 	local option="$1"
 	local fallback="$2"
 	
-	# Check cache first
-	if [[ -n "${TMUX_OPTIONS_CACHE[$option]:-}" ]]; then
-		echo "${TMUX_OPTIONS_CACHE[$option]}"
-		return
-	fi
-	
-	# Get value and cache it
-	local value
-	value=$(tmux_option_or_fallback "$option" "$fallback")
-	TMUX_OPTIONS_CACHE[$option]="$value"
-	echo "$value"
+	# Return from cache
+	echo "${TMUX_OPTIONS_CACHE[$option]:-$fallback}"
 }
 
 preview_settings() {
@@ -207,7 +260,7 @@ ${INPUT}"
 		CONFIGURATION_PATH="$HOME/.config"
 	fi
 	CONFIGURATION_MODE="$bind_configuration_mode:reload(find '$CONFIGURATION_PATH' -mindepth 1 -maxdepth 1 -type d)+change-preview(ls {})"
-	WINDOWS_MODE="$bind_window_mode:reload(tmux list-windows -a -F '#{session_name}:#{window_index}')+change-preview(${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/preview.sh -w {1})"
+	WINDOWS_MODE="$bind_window_mode:reload(tmux list-windows -a -F '#{session_name}:#{window_name}')+change-preview(${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/preview.sh -w {1})"
 
 	NEW_WINDOW="$bind_new_window:reload(find $PWD -mindepth 1 -maxdepth 1 -type d)+change-preview(ls {})"
 	# Use printf instead of echo -e for better portability and safety
@@ -278,6 +331,9 @@ ${INPUT}"
 }
 
 run_plugin() {
+	# Load all tmux options once
+	load_tmux_options
+	
 	preview_settings
 	window_settings
 	handle_binds
@@ -287,4 +343,11 @@ run_plugin() {
 }
 
 run_plugin
+exit_code=$?
+
+# Exit code 130 means user cancelled (Ctrl-C or ESC)
+if [[ $exit_code -eq 130 ]]; then
+	exit 0
+fi
+
 handle_output "$RESULT"
