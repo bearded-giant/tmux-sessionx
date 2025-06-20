@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 # Generate help text for sessionx keybindings
 cat << 'EOF'
