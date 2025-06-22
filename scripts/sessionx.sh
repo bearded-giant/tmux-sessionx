@@ -375,7 +375,7 @@ ${INPUT}"
 	KILL_SESSION="$bind_kill_session:execute-silent($KILL_SESSION_CMD)+reload($RELOAD_CMD)"
 	debug_log "KILL_SESSION binding created: $KILL_SESSION"
 
-	ACCEPT="$bind_accept:accept"
+	ACCEPT="$bind_accept:replace-query+print-query"
 	DELETE="$bind_delete_char:backward-delete-char"
 	EXIT="$bind_exit:abort"
 
@@ -449,6 +449,7 @@ ${INPUT}"
 		--bind "$HELP"
 		--bind '?:toggle-preview'
 		--exit-0
+		--print-query
 		--layout="$layout_mode"
 		--pointer=$pointer_icon
 		-p "$window_width,$window_height"
@@ -529,12 +530,20 @@ run_plugin() {
 	# Use printf instead of echo -e and quote array expansions
 	debug_log "About to run fzf..."
 	debug_log "fzf_opts: ${fzf_opts[*]:-none}"
+	
+	# Run fzf and capture output
+	local fzf_output
 	if [[ -n "${fzf_opts[*]:-}" ]]; then
-		RESULT=$(printf '%s\n' "${INPUT}" | sed -E 's/✗/ /g' | fzf-tmux "${fzf_opts[@]}" "${args[@]}")
+		fzf_output=$(printf '%s\n' "${INPUT}" | sed -E 's/✗/ /g' | fzf-tmux "${fzf_opts[@]}" "${args[@]}")
 	else
-		RESULT=$(printf '%s\n' "${INPUT}" | sed -E 's/✗/ /g' | fzf-tmux "${args[@]}")
+		fzf_output=$(printf '%s\n' "${INPUT}" | sed -E 's/✗/ /g' | fzf-tmux "${args[@]}")
 	fi
-	debug_log "fzf returned: exit_code=$?, RESULT='$RESULT'"
+	local fzf_exit=$?
+	debug_log "fzf returned: exit_code=$fzf_exit, raw output lines: $(echo "$fzf_output" | wc -l)"
+	
+	# With replace-query+print-query, fzf outputs only the query/selection
+	RESULT="$fzf_output"
+	debug_log "fzf final RESULT='$RESULT'"
 }
 
 run_plugin

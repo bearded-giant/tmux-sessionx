@@ -122,7 +122,11 @@ set -g @sessionx-debug 'off'
 
 Launching the plugin pops up an fzf-tmux "popup" with fuzzy search over existing sessions (-current session).
 **Sessions are sorted by most recently used** - the sort order automatically adjusts based on your sort setting to ensure the most recent sessions always appear first visually.
-If you insert a non-existing name and hit enter, a new session with that name will be created.
+
+### Creating New Sessions
+There are two ways to create a new session:
+1. **Type and Enter**: Simply type a session name that doesn't exist and press Enter - a new session will be created
+2. **Ctrl-s**: Press Ctrl-s to get a prompt for the new session name
 
 ### Key Enhancements in This Fork
 
@@ -133,11 +137,13 @@ If you insert a non-existing name and hit enter, a new session with that name wi
 - **Help System**: Enhanced help display with `Ctrl-h` showing all available keybindings
 - **Session Sorting**: Sessions automatically sorted by last accessed time
 
+- `Enter` on existing session: switch to that session
+- `Enter` on typed text: create new session with that name
+- `Ctrl-s` "session": prompt for a new session name and create it
 - `Alt-d` will delete/kill the selected session
+- `Ctrl-r` "rename": will launch a prompt to rename a session within the list
 - `Ctrl-p` scroll preview up (when `@sessionx-enable-preview-scroll` is 'on')
 - `Ctrl-f` scroll preview down (when `@sessionx-enable-preview-scroll` is 'on')
-- `Ctrl-s` "session": will prompt for a new session name and create it
-- `Ctrl-r` "read": will launch a `read` prompt to rename a session within the list
 - `Ctrl-w` "window": will reload the list with all the available _windows_ and their preview
 - `Ctrl-x` will fuzzy read `~/.config` or a configureable path of your choice (with `@session-x-path`)
 - `Ctrl-e` "expand": will expand `PWD` and search for local directories to create additional session from
