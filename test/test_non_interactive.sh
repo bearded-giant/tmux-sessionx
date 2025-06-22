@@ -128,6 +128,29 @@ test_function "sessionx.sh fails outside tmux" "
     )
 "
 
+# 7. Test helper scripts
+echo -e "\n${BLUE}7. Testing helper scripts${NC}"
+echo "------------------------"
+
+test_function "kill-session.sh exists and is executable" "
+    [[ -f '$SCRIPT_DIR/kill-session.sh' ]] && [[ -x '$SCRIPT_DIR/kill-session.sh' ]]
+"
+
+test_function "reload-sessions.sh exists and is executable" "
+    [[ -f '$SCRIPT_DIR/reload-sessions.sh' ]] && [[ -x '$SCRIPT_DIR/reload-sessions.sh' ]]
+"
+
+test_function "kill-session.sh handles input correctly" "
+    (
+        # Create a test session
+        tmux new-session -d -s test-kill-$$
+        # Run kill script
+        bash '$SCRIPT_DIR/kill-session.sh' 'test-kill-$$                         | Dec 22 17:00' 'off' '/tmp/test-kill.log'
+        # Verify session was killed
+        ! tmux has-session -t test-kill-$$ 2>/dev/null
+    )
+"
+
 # Summary
 echo
 echo "==========================================="

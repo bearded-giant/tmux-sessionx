@@ -112,13 +112,21 @@ set -g @sessionx-enable-preview-scroll 'true'
 # and look for a tmuxinator project with that name. 
 # If found, it'll launch the template using tmuxinator
 set -g @sessionx-tmuxinator-mode 'off'
+
+# Enable debug mode for troubleshooting issues
+# Creates detailed logs at /tmp/sessionx-debug.log
+set -g @sessionx-debug 'off'
 ```
 
 ## Working with SessionX 👷
 
 Launching the plugin pops up an fzf-tmux "popup" with fuzzy search over existing sessions (-current session).
 **Sessions are sorted by most recently used** - the sort order automatically adjusts based on your sort setting to ensure the most recent sessions always appear first visually.
-If you insert a non-existing name and hit enter, a new session with that name will be created.
+
+### Creating New Sessions
+There are two ways to create a new session:
+1. **Type and Enter**: Simply type a session name that doesn't exist and press Enter - a new session will be created
+2. **Ctrl-s**: Press Ctrl-s to get a prompt for the new session name
 
 ### Key Enhancements in This Fork
 
@@ -129,10 +137,13 @@ If you insert a non-existing name and hit enter, a new session with that name wi
 - **Help System**: Enhanced help display with `Ctrl-h` showing all available keybindings
 - **Session Sorting**: Sessions automatically sorted by last accessed time
 
-- `alt+backspace` will delete the selected session
+- `Enter` on existing session: switch to that session
+- `Enter` on typed text: create new session with that name
+- `Ctrl-s` "session": prompt for a new session name and create it
+- `Alt-d` will delete/kill the selected session
+- `Ctrl-r` "rename": will launch a prompt to rename a session within the list
 - `Ctrl-p` scroll preview up (when `@sessionx-enable-preview-scroll` is 'on')
-- `Ctrl-d` scroll preview down (when `@sessionx-enable-preview-scroll` is 'on')
-- `Ctrl-r` "read": will launch a `read` prompt to rename a session within the list
+- `Ctrl-f` scroll preview down (when `@sessionx-enable-preview-scroll` is 'on')
 - `Ctrl-w` "window": will reload the list with all the available _windows_ and their preview
 - `Ctrl-x` will fuzzy read `~/.config` or a configureable path of your choice (with `@session-x-path`)
 - `Ctrl-e` "expand": will expand `PWD` and search for local directories to create additional session from
@@ -169,6 +180,10 @@ set -g @sessionx-bind-new-window 'alt-c'
 # By default, it is set to `ctrl-r`.
 set -g @sessionx-bind-rename-session 'alt-r'
 
+# This command creates a new session.
+# By default, it is set to `ctrl-s`.
+set -g @sessionx-bind-new-session 'alt-n'
+
 # This command rebinds scrolling up/down inside the preview.
 set -g @sessionx-bind-scroll-up 'alt-m'
 set -g @sessionx-bind-scroll-down 'alt-n'
@@ -177,6 +192,8 @@ set -g @sessionx-bind-scroll-down 'alt-n'
 # These commands are used within sessionx when it's open.
 
 # This command is equivalent to killing the selected session.
+# This command kills the selected session.
+# By default, it is set to `alt-d`.
 set -g @sessionx-bind-kill-session 'alt-x'
 
 # This command opens the configuration path.
@@ -226,6 +243,46 @@ bash test/test_non_interactive.sh
 ```
 
 For manual testing instructions, see [TESTING.md](./TESTING.md).
+
+## Troubleshooting 🔍
+
+### Debug Mode
+
+If you're experiencing issues with SessionX (e.g., sessions not switching, deletion not working), enable debug mode to get detailed logs:
+
+```bash
+# Enable debug logging
+set -g @sessionx-debug 'on'
+```
+
+After enabling debug mode:
+1. Reload your tmux configuration: `prefix + r` (or `tmux source-file ~/.config/tmux/tmux.conf`)
+2. Use SessionX and reproduce the issue
+3. Check the debug log: `cat /tmp/sessionx-debug.log`
+
+The debug log includes:
+- Session detection and parsing
+- Key binding captures
+- fzf exit codes
+- Session name extraction for switching/deletion/renaming
+- Any errors that occur
+
+### Common Issues
+
+**Sessions not switching:**
+- Check if session names contain special characters
+- Verify the session exists: `tmux list-sessions`
+- Enable debug mode and check what session name is being extracted
+
+**Delete (alt-d) not working:**
+- Some terminals may not pass alt+backspace correctly
+- Try setting a different binding: `set -g @sessionx-bind-kill-session 'ctrl-x'`
+- Check debug logs to see if the key press is being captured
+
+**Modal closes instead of performing action:**
+- This usually indicates the command failed
+- Check debug logs for error messages
+- Verify tmux permissions and that sessions aren't attached elsewhere
 
 ## WARNING ⚠️
 
