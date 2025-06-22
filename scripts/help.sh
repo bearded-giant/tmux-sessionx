@@ -12,7 +12,7 @@ cat << 'EOF'
 │                                                                         │
 │ Session Management                                                      │
 │ ─────────────────────────────────────────────────────────────────────── │
-│ Alt+Backspace    Kill selected session                                  │
+│ Alt-d            Kill/delete selected session                           │
 │ Ctrl-r           Rename selected session                                │
 │                                                                         │
 │ View Modes                                                              │
@@ -28,7 +28,7 @@ cat << 'EOF'
 │ ─────────────────────────────────────────────────────────────────────── │
 │ ?                Toggle preview pane on/off                             │
 │ Ctrl-p           Scroll preview up (if enabled in config)               │
-│ Ctrl-d           Scroll preview down (if enabled in config)             │
+│ Ctrl-f           Scroll preview down (if enabled in config)             │
 │                                                                         │
 │ Sorting                                                                 │
 │ ─────────────────────────────────────────────────────────────────────── │
