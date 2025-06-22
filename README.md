@@ -60,9 +60,16 @@ set -g @sessionx-window-mode 'on'
 set -g @sessionx-tree-mode 'on'
 
 # Preview location and screenspace can be adjusted with these
-# Reminder: it can be toggeled on/off with `?`
+# Available options: 'top' (default), 'bottom', 'right', 'left'
+# Note: 'left' is automatically converted to 'top' for better usability
+# Reminder: it can be toggled on/off with `?`
 set -g @sessionx-preview-location 'right'
 set -g @sessionx-preview-ratio '55%'
+
+# When preview location is 'right', this controls the session list width
+# The preview pane will use the remaining space (100% - list width)
+# This helps prevent the session timestamps from being cut off
+set -g @sessionx-list-pane-width '35%'
 
 # The preview can also be disabled altogether
 set -g @sessionx-preview-enabled 'false'
@@ -71,8 +78,12 @@ set -g @sessionx-preview-enabled 'false'
 set -g @sessionx-window-height '90%'
 set -g @sessionx-window-width '75%'
 
-# If you want change the layout to top you can set
-set -g @sessionx-layout 'reverse'
+# Sort order for session list
+# 'default' - input at bottom, list grows downward, most recent sessions at top
+# 'reverse' - input at top, list grows upward, most recent sessions at bottom (visually first)
+# The plugin automatically adjusts the session order to ensure most recent sessions
+# always appear first in the visual order regardless of this setting
+set -g @sessionx-sort 'reverse'
 
 # If you want to change the prompt, the space is nedded to not overlap the icon
 set -g @sessionx-prompt " "
@@ -93,6 +104,10 @@ set -g @sessionx-additional-options "--color pointer:9,spinner:92,marker:46"
 # Upgrade, or use this setting for support
 set -g @sessionx-legacy-fzf-support 'on'
 
+# Enable or disable preview pane scrolling (default 'true')
+# When disabled, the scroll keybindings (ctrl-p/ctrl-d) will not be active
+set -g @sessionx-enable-preview-scroll 'true'
+
 # With Tmuxinaor turned 'on' (off by default), the plugin will take a given name
 # and look for a tmuxinator project with that name. 
 # If found, it'll launch the template using tmuxinator
@@ -102,7 +117,7 @@ set -g @sessionx-tmuxinator-mode 'off'
 ## Working with SessionX 👷
 
 Launching the plugin pops up an fzf-tmux "popup" with fuzzy search over existing sessions (-current session).
-**Sessions are sorted by most recently used (most recent at the top)** - an enhancement in this fork.
+**Sessions are sorted by most recently used** - the sort order automatically adjusts based on your sort setting to ensure the most recent sessions always appear first visually.
 If you insert a non-existing name and hit enter, a new session with that name will be created.
 
 ### Key Enhancements in This Fork
@@ -115,16 +130,16 @@ If you insert a non-existing name and hit enter, a new session with that name wi
 - **Session Sorting**: Sessions automatically sorted by last accessed time
 
 - `alt+backspace` will delete the selected session
-- `Ctrl-u` scroll preview up
-- `Ctrl-d` scroll preview down
+- `Ctrl-p` scroll preview up (when `@sessionx-enable-preview-scroll` is 'on')
+- `Ctrl-d` scroll preview down (when `@sessionx-enable-preview-scroll` is 'on')
 - `Ctrl-r` "read": will launch a `read` prompt to rename a session within the list
 - `Ctrl-w` "window": will reload the list with all the available _windows_ and their preview
 - `Ctrl-x` will fuzzy read `~/.config` or a configureable path of your choice (with `@session-x-path`)
 - `Ctrl-e` "expand": will expand `PWD` and search for local directories to create additional session from
 - `Ctrl-b` "back": reloads the first query. Useful when going into window or expand mode, to go back
-- `Ctrl-t` "tree": reloads the preview with the tree of sessions+windows familiar from the native session manager (C-S)
+- `Ctrl-t` "tree": shows the preview with the tree of sessions+windows familiar from the native session manager (use `Ctrl-b` to return to normal preview)
 - `Ctrl-/` "tmuxinator": fetches a list of tmuxinator sessions and previews them
-- `Ctrl-h` "help": displays a help screen with all keybindings
+- `Alt-h` "help": displays a help screen with all keybindings (Alt-h is used instead of Ctrl-h to avoid terminal conflicts)
 - `?` toggles the preview pane
 
 ### Rebind keys:

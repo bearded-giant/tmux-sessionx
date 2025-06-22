@@ -32,7 +32,7 @@ preview_settings() {
 window_settings() {
 	window_height=$(tmux_option_or_fallback "@sessionx-window-height" "75%")
 	window_width=$(tmux_option_or_fallback "@sessionx-window-width" "75%")
-	layout_mode=$(tmux_option_or_fallback "@sessionx-layout" "default")
+	layout_mode=$(tmux_option_or_fallback "@sessionx-sort" "default")
 	prompt_icon=$(tmux_option_or_fallback "@sessionx-prompt" " ")
 	pointer_icon=$(tmux_option_or_fallback "@sessionx-pointer" "▶")
 }
@@ -172,7 +172,7 @@ handle_extra_options
 tmux set-option -g @sessionx-_built-args "$(declare -p args)"
 
 if [ `tmux_option_or_fallback "@sessionx-prefix" "on"` = "on"  ]; then
-	tmux bind-key "$(tmux_option_or_fallback "@sessionx-bind" "O")" run-shell "$CURRENT_DIR/scripts/sessionx.sh"
+	tmux bind-key "$(tmux_option_or_fallback "@sessionx-bind" "O")" run-shell -b "$CURRENT_DIR/scripts/sessionx.sh || true"
 else
-	tmux bind-key -n "$(tmux_option_or_fallback "@sessionx-bind" "O")" run-shell "$CURRENT_DIR/scripts/sessionx.sh"
+	tmux bind-key -n "$(tmux_option_or_fallback "@sessionx-bind" "O")" run-shell -b "$CURRENT_DIR/scripts/sessionx.sh || true"
 fi

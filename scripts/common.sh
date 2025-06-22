@@ -18,8 +18,9 @@ tmux_option_or_fallback() {
 # Validate session name to prevent command injection
 validate_session_name() {
 	local name="$1"
-	# Allow alphanumeric, dash, underscore, dot
-	if [[ "$name" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+	# Allow alphanumeric, dash, underscore, dot, and spaces
+	# Disallow only dangerous characters like $, `, ;, |, &, etc.
+	if [[ "$name" =~ ^[a-zA-Z0-9._[:space:]-]+$ ]]; then
 		return 0
 	fi
 	return 1

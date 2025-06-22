@@ -102,6 +102,13 @@ test_function "tmux option parsing regex" "
     [[ \"\${BASH_REMATCH[2]}\" == 'o' ]]
 "
 
+test_function "preview scroll option parsing" "
+    line='@sessionx-enable-preview-scroll true'
+    [[ \"\$line\" =~ ^(@[^[:space:]]+)[[:space:]](.*)$ ]]
+    [[ \"\${BASH_REMATCH[1]}\" == '@sessionx-enable-preview-scroll' ]]
+    [[ \"\${BASH_REMATCH[2]}\" == 'true' ]]
+"
+
 # 5. Test help script
 echo -e "\n${BLUE}5. Testing help.sh${NC}"
 echo "-----------------"

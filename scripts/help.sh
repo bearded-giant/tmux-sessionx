@@ -1,16 +1,14 @@
 #!/usr/bin/env bash
-set -euo pipefail
-
-# Generate help text for sessionx keybindings
 cat << 'EOF'
 ╭─────────────────────────────────────────────────────────────────────────╮
 │                        SessionX Keybindings Help                        │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ Navigation                                                              │
 │ ─────────────────────────────────────────────────────────────────────── │
-│ ↑/↓ or C-n/C-m   Navigate list                                         │
+│ ↑/↓ or C-n/C-m   Navigate list                                          │
 │ Enter            Open selected session/window                           │
 │ Esc              Exit SessionX                                          │
+│ Alt-h            Show this help screen                                  │
 │                                                                         │
 │ Session Management                                                      │
 │ ─────────────────────────────────────────────────────────────────────── │
@@ -19,30 +17,31 @@ cat << 'EOF'
 │                                                                         │
 │ View Modes                                                              │
 │ ─────────────────────────────────────────────────────────────────────── │
-│ Ctrl-w           Switch to window mode (list all windows)              │
-│ Ctrl-t           Switch to tree mode (hierarchical view)               │
+│ Ctrl-w           Switch to window mode (list all windows)               │
+│ Ctrl-t           Show tree preview (use Ctrl-b to go back)              │
 │ Ctrl-/           Show tmuxinator templates                              │
 │ Ctrl-e           Expand current directory for new sessions              │
-│ Ctrl-x           Browse configuration directory                        │
-│ Ctrl-b           Go back to session list                               │
+│ Ctrl-x           Browse configuration directory                         │
+│ Ctrl-b           Go back to session list                                │
 │                                                                         │
 │ Preview Controls                                                        │
 │ ─────────────────────────────────────────────────────────────────────── │
 │ ?                Toggle preview pane on/off                             │
-│ Ctrl-p           Scroll preview up                                      │
-│ Ctrl-d           Scroll preview down                                    │
+│ Ctrl-p           Scroll preview up (if enabled in config)               │
+│ Ctrl-d           Scroll preview down (if enabled in config)             │
 │                                                                         │
 │ Sorting                                                                 │
 │ ─────────────────────────────────────────────────────────────────────── │
-│ Ctrl-u           Sort list ascending                                    │
-│ Ctrl-d           Sort list descending                                   │
+│ Ctrl-s           Sort list ascending                                    │
+│ Ctrl-a           Sort list descending                                   │
 │                                                                         │
 │ Tips                                                                    │
 │ ─────────────────────────────────────────────────────────────────────── │
-│ • Type a new name and press Enter to create a new session              │
-│ • With zoxide enabled, non-existing paths will be searched             │
-│ • Custom paths from config are shown with ✗ replacing spaces           │
+│ • Type a new name and press Enter to create a new session               │
+│ • With zoxide enabled, non-existing paths will be searched              │
+│ • Custom paths from config are shown with ✗ replacing spaces            │ 
 │                                                                         │
-│ Press any key to return...                                              │
+│ Press Ctrl-b to return to session preview                              │
 ╰─────────────────────────────────────────────────────────────────────────╯
 EOF
+
