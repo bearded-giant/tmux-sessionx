@@ -61,14 +61,19 @@ set -g @sessionx-tree-mode 'on'
 
 # Preview location and screenspace can be adjusted with these
 # Available options: 'top' (default), 'bottom', 'right', 'left'
-# Note: 'left' is automatically converted to 'top' for better usability
+# Note: 'left' is automatically converted to 'right' for consistency
 # Reminder: it can be toggled on/off with `?`
 set -g @sessionx-preview-location 'right'
-set -g @sessionx-preview-ratio '55%'
 
-# When preview location is 'right', this controls the session list width
-# The preview pane will use the remaining space (100% - list width)
-# This helps prevent the session timestamps from being cut off
+# For top/bottom preview: controls how much space the preview takes (session list gets the rest)
+# For example, '75%' means preview takes 75%, session list takes 25%
+# To get a longer session list with top/bottom preview, use a smaller ratio like '50%' or '40%'
+set -g @sessionx-preview-ratio '75%'
+
+# For right/left preview: controls how much space the SESSION LIST takes (preview gets the rest)
+# For example, '35%' means session list takes 35%, preview takes 65%
+# To get a longer session list with right/left preview, use a larger width like '50%' or '60%'
+# This helps prevent session timestamps from being cut off
 set -g @sessionx-list-pane-width '35%'
 
 # The preview can also be disabled altogether

@@ -107,7 +107,7 @@ preview_settings() {
 	fi
 	preview_location=$(cached_tmux_option "@sessionx-preview-location" "top")
 	if [[ "$preview_location" == "left" ]]; then
-		preview_location="top"
+		preview_location="right"
 	fi
 	preview_ratio=$(cached_tmux_option "@sessionx-preview-ratio" "75%")
 	preview_enabled=$(cached_tmux_option "@sessionx-preview-enabled" "true")
@@ -180,10 +180,10 @@ input() {
 		# Adjust column width based on preview location
 		preview_location=$(cached_tmux_option "@sessionx-preview-location" "top")
 		if [[ "$preview_location" == "left" ]]; then
-			preview_location="top"
+			preview_location="right"
 		fi
 		if [[ "$preview_location" == "right" ]]; then
-			# Narrower columns when preview is on the right
+			# Narrower columns when preview is on the right or left
 			name_width=20
 		else
 			# Wider columns when preview is on top/bottom
@@ -408,7 +408,7 @@ ${INPUT}"
 	# Get preview location for column width
 	preview_location=$(cached_tmux_option "@sessionx-preview-location" "top")
 	if [[ "$preview_location" == "left" ]]; then
-		preview_location="top"
+		preview_location="right"
 	fi
 	if [[ "$preview_location" == "right" ]]; then
 		name_width_rename=20
@@ -460,14 +460,16 @@ ${INPUT}"
 	
 	if [[ "$preview_enabled" == "true" ]]; then
 		args+=(--preview "${PREVIEW_LINE}")
-		# For right preview, calculate the preview ratio based on list pane width
-		if [[ "$preview_location" == "right" ]]; then
-			# Convert list pane width to preview ratio (inverse)
+		# Calculate preview window size based on location
+		if [[ "$preview_location" == "right" ]] || [[ "$preview_location" == "left" ]]; then
+			# For side previews, use list-pane-width to determine split
 			# If list is 35%, preview should be 65%
 			list_width_num="${list_pane_width%\%}"
 			preview_width=$((100 - list_width_num))
 			args+=(--preview-window "${preview_location},${preview_width}%,,")
 		else
+			# For top/bottom previews, preview-ratio controls the preview size
+			# This means the list gets (100 - ratio) space
 			args+=(--preview-window "${preview_location},${preview_ratio},,")
 		fi
 		args+=(--preview-label "$HEADER")

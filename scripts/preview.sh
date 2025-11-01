@@ -99,6 +99,9 @@ done
 shift $(($OPTIND - 1))
 SESSION="$1"
 
+# Trim trailing spaces from fixed-width formatting (from delimiter format)
+SESSION="${SESSION%"${SESSION##*[![:space:]]}"}"
+
 if test "${SESSION}" == '*Last*'; then
 	SESSION=$(tmux display-message -p "#{client_last_session}")
 	if test -z "${SESSION}"; then
