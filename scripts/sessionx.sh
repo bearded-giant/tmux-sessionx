@@ -177,39 +177,49 @@ input() {
 			sort_order="-n"
 		fi
 		
-		# Adjust column width based on preview location
+		# Minimum name-column width by preview location; the column grows past
+		# this to fit the longest session name so the date column stays aligned
+		# and long names are shown in full (truncating would break selection,
+		# which parses the displayed name back to a real session).
 		preview_location=$(cached_tmux_option "@sessionx-preview-location" "top")
 		if [[ "$preview_location" == "left" ]]; then
 			preview_location="right"
 		fi
 		if [[ "$preview_location" == "right" ]]; then
-			# Narrower columns when preview is on the right or left
 			name_width=20
 		else
-			# Wider columns when preview is on top/bottom
 			name_width=30
 		fi
-		
+
+		session_data=$(tmux list-sessions -F '#{session_last_attached}|#{session_name}' | sort $sort_order -t'|' -k1)
+
+		while IFS='|' read -r _ name; do
+			[[ -z "$name" ]] && continue
+			if (( ${#name} > name_width )); then
+				name_width=${#name}
+			fi
+		done <<< "$session_data"
+
 		if [[ "$filter_current_session" == "true" ]]; then
-			(tmux list-sessions -F '#{session_last_attached}|#{session_name}' | sort $sort_order -t'|' -k1 | while IFS='|' read -r timestamp name; do
+			(while IFS='|' read -r timestamp name; do
+				[[ -z "$name" ]] && continue
 				if [[ -n "$timestamp" ]] && [[ "$timestamp" =~ ^[0-9]+$ ]]; then
 					formatted_time=$(date -r "$timestamp" "+%b %d %H:%M" 2>&1 || echo "Unknown")
 				else
 					formatted_time="Unknown"
 				fi
-				# Use fixed width for alignment with a unique delimiter
 				printf "%-${name_width}s | %s\n" "$name" "$formatted_time"
-			done | grep -v "^$CURRENT ") || echo "$CURRENT"
+			done <<< "$session_data" | grep -v "^$CURRENT ") || echo "$CURRENT"
 		else
-			(tmux list-sessions -F '#{session_last_attached}|#{session_name}' | sort $sort_order -t'|' -k1 | while IFS='|' read -r timestamp name; do
+			(while IFS='|' read -r timestamp name; do
+				[[ -z "$name" ]] && continue
 				if [[ -n "$timestamp" ]] && [[ "$timestamp" =~ ^[0-9]+$ ]]; then
 					formatted_time=$(date -r "$timestamp" "+%b %d %H:%M" 2>&1 || echo "Unknown")
 				else
 					formatted_time="Unknown"
 				fi
-				# Use fixed width for alignment with a unique delimiter
 				printf "%-${name_width}s | %s\n" "$name" "$formatted_time"
-			done) || echo "$CURRENT"
+			done <<< "$session_data") || echo "$CURRENT"
 		fi
 	fi
 }
