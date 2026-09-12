@@ -63,9 +63,37 @@ short_key() {
 	echo "$key"
 }
 
+claude_status_map() {
+	# ponytail: greps Claude Code's TUI strings; breaks when its wording changes
+	local pane_data session pane cmd tail status
+	pane_data=$(tmux list-panes -a -F '#{session_name}|#{pane_id}|#{pane_current_command}')
+	while IFS='|' read -r session pane cmd; do
+		[[ "$cmd" =~ ^[0-9]+\.[0-9]+\.[0-9]+$|^claude$|^node$ ]] || continue
+		tail=$(tmux capture-pane -p -t "$pane" -S -40 2>/dev/null) || continue
+		if grep -q -e 'Esc to cancel' -e 'Do you want to' <<< "$tail"; then
+			status="ask"
+		elif grep -q 'esc to interrupt' <<< "$tail"; then
+			status="busy"
+		elif grep -q -e '^❯' -e '⏵⏵' <<< "$tail"; then
+			status="ready"
+		else
+			continue
+		fi
+		case "${CLAUDE_STATUS[$session]:-}" in
+		ask) ;;
+		ready) [[ "$status" == "ask" ]] && CLAUDE_STATUS[$session]="$status" ;;
+		*) CLAUDE_STATUS[$session]="$status" ;;
+		esac
+	done <<< "$pane_data"
+}
+
 render_session_list() {
-	local current="$1" filter_current="$2" sort_order="$3" name_width="$4" pin_color="$5" pinned_only="${6:-false}"
+	local current="$1" filter_current="$2" sort_order="$3" name_width="$4" pin_color="$5" pinned_only="${6:-false}" claude_status="${7:-on}"
 	local session_data timestamp pinned windows alerts name label formatted_time output row
+	declare -A CLAUDE_STATUS=()
+	if [[ "$claude_status" == "on" ]]; then
+		claude_status_map
+	fi
 	session_data=$(tmux list-sessions -F '#{session_last_attached}|#{@sessionx-pinned}|#{session_windows}|#{session_alerts}|#{session_name}|#{@sessionx-label}' | sort $sort_order -t'|' -k1,1)
 
 	while IFS='|' read -r _ _ _ _ name _; do
@@ -87,6 +115,9 @@ render_session_list() {
 		row=$(printf "%-${name_width}s | %s | %sw" "$name" "$formatted_time" "$windows")
 		if [[ -n "$alerts" ]]; then
 			row+="!"
+		fi
+		if [[ -n "${CLAUDE_STATUS[$name]:-}" ]]; then
+			row+=" | ${CLAUDE_STATUS[$name]}"
 		fi
 		if [[ -n "$label" ]]; then
 			row+=" | $label"

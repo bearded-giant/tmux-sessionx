@@ -128,7 +128,9 @@ set -g @sessionx-debug 'off'
 Launching the plugin pops up an fzf-tmux "popup" with fuzzy search over existing sessions (-current session).
 **Sessions are sorted by most recently used** - the sort order automatically adjusts based on your sort setting to ensure the most recent sessions always appear first visually.
 
-Each row shows `name | last attached | window count | label`. The window count gets a `!` suffix when tmux has flagged activity or a bell in one of that session's windows (requires `set -g monitor-activity on` or `monitor-bell on` in your tmux config; the flag clears when you visit the window).
+Each row shows `name | last attached | window count | claude status | label`. The window count gets a `!` suffix when tmux has flagged activity or a bell in one of that session's windows (requires `set -g monitor-activity on` or `monitor-bell on` in your tmux config; the flag clears when you visit the window).
+
+The claude status column appears for sessions with a Claude Code pane: `ask` when it is waiting on a permission or question prompt, `ready` when it is idle at the input box, `busy` while it is working. It is a heuristic over the pane's last 40 lines, so it will drift when Claude Code changes its UI wording. Turn it off with `set -g @sessionx-claude-status 'off'`.
 
 ### Creating New Sessions
 There are two ways to create a new session:

@@ -61,6 +61,7 @@ load_tmux_options() {
 		"@sessionx-bind-label:ctrl-l"
 		"@sessionx-pin-color:1;33"
 		"@sessionx-confirm-kill:on"
+		"@sessionx-claude-status:on"
 		"@sessionx-filter-current:true"
 		"@sessionx-custom-paths:"
 		"@sessionx-zoxide-mode:off"
@@ -199,7 +200,8 @@ input() {
 		fi
 
 		pin_color=$(cached_tmux_option "@sessionx-pin-color" "1;33")
-		render_session_list "$CURRENT" "$filter_current_session" "$sort_order" "$name_width" "$pin_color"
+		claude_status=$(cached_tmux_option "@sessionx-claude-status" "on")
+		render_session_list "$CURRENT" "$filter_current_session" "$sort_order" "$name_width" "$pin_color" "false" "$claude_status"
 	fi
 }
 
