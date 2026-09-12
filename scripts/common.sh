@@ -70,7 +70,7 @@ claude_status_map() {
 	while IFS='|' read -r session pane cmd; do
 		[[ "$cmd" =~ ^[0-9]+\.[0-9]+\.[0-9]+$|^claude$|^node$ ]] || continue
 		tail=$(tmux capture-pane -p -t "$pane" -S -40 2>/dev/null) || continue
-		if grep -q -e 'Esc to cancel' -e 'Do you want to' -e 'Would you like' <<< "$tail"; then
+		if grep -q -E -e 'Esc to cancel' -e '^[[:space:]]*❯ [0-9]+\. ' <<< "$tail"; then
 			status="ask"
 		elif grep -q -E -e 'esc to interrupt' -e '^[^[:space:]]+ [A-Z][a-z]+… \(' <<< "$tail"; then
 			status="busy"
