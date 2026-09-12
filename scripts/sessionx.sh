@@ -407,8 +407,9 @@ ${INPUT}"
 
 	HELP="$bind_help:show-preview+change-preview(${SCRIPT_DIR}/help.sh)"
 
-	# Simplified header with only core functions
-	HEADER="[$(short_key "$bind_new_session")]new [$(short_key "$bind_kill_session")]kill [$(short_key "$bind_rename_session")]rename [$(short_key "$bind_window_mode")]win [$(short_key "$bind_panes_mode")]panes [$(short_key "$bind_pin")]pin [$(short_key "$bind_back")]back [$(short_key "$bind_help")]help"
+	HEADER="[$(short_key "$bind_new_session")]new [$(short_key "$bind_kill_session")]kill [$(short_key "$bind_rename_session")]rename [$(short_key "$bind_pin")]pin"
+	LIST_HEADER="[$(short_key "$bind_window_mode")]win [$(short_key "$bind_panes_mode")]panes [$(short_key "$bind_tree_mode")]tree [$(short_key "$bind_back")]back
+[$(short_key "$bind_toggle_preview")]preview [$(short_key "$bind_new_window")]dirs [$(short_key "$bind_configuration_mode")]config [$(short_key "$bind_help")]help"
 
 	args=(
 		--bind "$TMUXINATOR_MODE"
@@ -430,6 +431,7 @@ ${INPUT}"
 		--bind "$TOGGLE_PREVIEW"
 		--bind "$PIN_SESSION"
 		--ansi
+		--header "$LIST_HEADER"
 		--exit-0
 		--print-query
 		--layout="$layout_mode"
