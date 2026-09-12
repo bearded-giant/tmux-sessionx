@@ -60,6 +60,7 @@ load_tmux_options() {
 		"@sessionx-bind-pinned-filter:btab"
 		"@sessionx-bind-label:ctrl-l"
 		"@sessionx-pin-color:1;33"
+		"@sessionx-confirm-kill:on"
 		"@sessionx-filter-current:true"
 		"@sessionx-custom-paths:"
 		"@sessionx-zoxide-mode:off"
@@ -159,6 +160,7 @@ handle_binds() {
 	bind_pin=$(cached_tmux_option "@sessionx-bind-pin" "tab")
 	bind_pinned_filter=$(cached_tmux_option "@sessionx-bind-pinned-filter" "btab")
 	bind_label=$(cached_tmux_option "@sessionx-bind-label" "ctrl-l")
+	confirm_kill=$(cached_tmux_option "@sessionx-confirm-kill" "on")
 	
 	debug_log "Key bindings configured:"
 	debug_log "  kill-session: $bind_kill_session"
@@ -353,11 +355,15 @@ ${INPUT}"
 	# Use reload script for back functionality too
 	BACK="$bind_back:reload($SCRIPT_DIR/reload-sessions.sh '$CURRENT')+change-preview(${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/preview.sh ${PREVIEW_OPTIONS} {1})"
 	# Use helper script for cleaner execution
-	KILL_SESSION_CMD="$SCRIPT_DIR/kill-session.sh {} $DEBUG_MODE $DEBUG_LOG"
+	KILL_SESSION_CMD="$SCRIPT_DIR/kill-session.sh {} $DEBUG_MODE $DEBUG_LOG $confirm_kill"
 	# Use simpler reload script
 	RELOAD_CMD="$SCRIPT_DIR/reload-sessions.sh '$CURRENT'"
 	# Keep cursor position after deletion (--track handles this)
-	KILL_SESSION="$bind_kill_session:execute-silent($KILL_SESSION_CMD)+reload($RELOAD_CMD)"
+	if [[ "$confirm_kill" == "on" ]]; then
+		KILL_SESSION="$bind_kill_session:execute($KILL_SESSION_CMD)+reload($RELOAD_CMD)"
+	else
+		KILL_SESSION="$bind_kill_session:execute-silent($KILL_SESSION_CMD)+reload($RELOAD_CMD)"
+	fi
 	PIN_SESSION="$bind_pin:execute-silent($SCRIPT_DIR/toggle-pin.sh {} $DEBUG_MODE $DEBUG_LOG)+reload($RELOAD_CMD)"
 	TOGGLE_PREVIEW="$bind_toggle_preview:toggle-preview"
 	PINNED_FILTER="$bind_pinned_filter:reload($SCRIPT_DIR/reload-sessions.sh '$CURRENT' pinned)"

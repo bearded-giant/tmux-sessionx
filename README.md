@@ -147,7 +147,7 @@ There are two ways to create a new session:
 - `Enter` on existing session: switch to that session
 - `Enter` on typed text: create new session with that name
 - `Ctrl-s` "session": prompt for a new session name and create it
-- `Alt-d` will delete/kill the selected session
+- `Alt-d` will kill the selected session after a `y/N` prompt. Disable the prompt with `set -g @sessionx-confirm-kill 'off'`
 - `Ctrl-r` "rename": will launch a prompt to rename a session within the list
 - `Tab` "pin": toggles a color highlight on the selected session so the few sessions you are actually working in stand out. Stored as a tmux session option, so it survives reopening sessionx and clears when the session is killed. Color is configurable with `@sessionx-pin-color` (ANSI SGR attributes, default `1;33` = bold yellow)
 - `Shift-Tab` "pins": filters the list down to pinned sessions (use `Ctrl-b` to return to the full list)

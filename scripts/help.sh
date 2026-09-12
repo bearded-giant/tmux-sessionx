@@ -12,7 +12,7 @@ cat << 'EOF'
 │                                                                         │
 │ Session Management                                                      │
 │ ─────────────────────────────────────────────────────────────────────── │
-│ Alt-d            Kill/delete selected session                           │
+│ Alt-d            Kill selected session (asks y/N, configurable)         │
 │ Ctrl-r           Rename selected session                                │
 │ Tab              Toggle pin highlight on selected session               │
 │ Shift-Tab        Show only pinned sessions (Ctrl-b to go back)          │
