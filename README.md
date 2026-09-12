@@ -128,6 +128,8 @@ set -g @sessionx-debug 'off'
 Launching the plugin pops up an fzf-tmux "popup" with fuzzy search over existing sessions (-current session).
 **Sessions are sorted by most recently used** - the sort order automatically adjusts based on your sort setting to ensure the most recent sessions always appear first visually.
 
+Each row shows `name | last attached | window count | label`. The window count gets a `!` suffix when tmux has flagged activity or a bell in one of that session's windows (requires `set -g monitor-activity on` or `monitor-bell on` in your tmux config; the flag clears when you visit the window).
+
 ### Creating New Sessions
 There are two ways to create a new session:
 1. **Type and Enter**: Simply type a session name that doesn't exist and press Enter - a new session will be created
