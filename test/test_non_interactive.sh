@@ -50,7 +50,7 @@ test_function "validate_session_name (valid)" "
 
 test_function "validate_session_name (invalid)" "
     source '$SCRIPT_DIR/common.sh'
-    ! validate_session_name 'my session with spaces'
+    ! validate_session_name 'bad;name$(id)'
 "
 
 test_function "validate_path (valid)" "
