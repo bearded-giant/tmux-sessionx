@@ -37,6 +37,24 @@ window_mode() {
 	tmux capture-pane -ep -t "${args[0]}"
 }
 
+panes_mode() {
+	session_name="${1}"
+	session_id=$(tmux ls -F '#{session_id}' -f "#{==:#{session_name},${session_name}}")
+	if test -z "${session_id}"; then
+		return 1
+	fi
+	tmux list-panes -t "${session_id}" -F '#{pane_id} #{pane_index} #{pane_active} #{pane_current_command}' |
+		while read -r pane_id pane_index pane_active pane_cmd; do
+			marker=""
+			if test "${pane_active}" -eq 1; then
+				marker=" *"
+			fi
+			printf '\033[1;34m── pane %s: %s%s ──\033[0m\n' "${pane_index}" "${pane_cmd}" "${marker}"
+			# strip trailing blank rows so stacked panes stay compact
+			tmux capture-pane -ep -t "${pane_id}" | sed -e :a -e '/^[[:space:]]*$/{$d;N;ba' -e '}'
+		done
+}
+
 # Display a full tree, with selected session highlighted.
 # If an session name is passed as an argument, highlight it
 # in the output.
@@ -68,6 +86,7 @@ usage() {
 		  -h              Print help and exit.
 		  -p              Display tmuxp configuration is session not running
 		  -t              Display tree of sessions
+		  -a              Display all panes of the active window
 
 		A session name of "*Last*" is replaced with the client's last session.
 	END
@@ -83,12 +102,13 @@ mode="single"
 # tmuxp configuration instead (if it exists)
 DISPLAY_TMUXP=0
 
-while getopts ":hptw" opt; do
+while getopts ":ahptw" opt; do
 	case $opt in
 	h)
 		usage
 		exit 0
 		;;
+	a) mode="panes" ;;
 	p) DISPLAY_TMUXP=1 ;;
 	t) mode="tree" ;;
 	w) mode="window" ;;
@@ -114,6 +134,7 @@ case "${mode}" in
 single) single_mode "${SESSION}" ;;
 tree) tree_mode "${SESSION}" ;;
 window) window_mode "${SESSION}" ;;
+panes) panes_mode "${SESSION}" ;;
 *) echo "Unknown mode \"${mode}\"" ;;
 esac
 

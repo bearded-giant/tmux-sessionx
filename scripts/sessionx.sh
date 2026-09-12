@@ -38,6 +38,7 @@ load_tmux_options() {
 		"@sessionx-pointer:▶"
 		"@sessionx-bind-tmuxinator-list:ctrl-/"
 		"@sessionx-bind-tree-mode:ctrl-t"
+		"@sessionx-bind-panes-mode:ctrl-o"
 		"@sessionx-bind-window-mode:ctrl-w"
 		"@sessionx-bind-configuration-path:ctrl-x"
 		"@sessionx-bind-rename-session:ctrl-r"
@@ -48,14 +49,17 @@ load_tmux_options() {
 		"@sessionx-bind-abort:esc"
 		"@sessionx-bind-accept:enter"
 		"@sessionx-bind-delete-char:bspace"
-		"@sessionx-bind-scroll-up:ctrl-p"
+		"@sessionx-bind-scroll-up:ctrl-u"
 		"@sessionx-bind-scroll-down:ctrl-d"
 		"@sessionx-enable-preview-scroll:true"
 		"@sessionx-bind-select-up:ctrl-n"
 		"@sessionx-bind-select-down:ctrl-m"
 		"@sessionx-bind-sort-asc:ctrl-u"
 		"@sessionx-bind-sort-desc:ctrl-d"
-		"@sessionx-bind-help:ctrl-h"
+		"@sessionx-bind-help:?"
+		"@sessionx-bind-toggle-preview:ctrl-p"
+		"@sessionx-bind-pin:tab"
+		"@sessionx-pin-color:1;33"
 		"@sessionx-filter-current:true"
 		"@sessionx-custom-paths:"
 		"@sessionx-zoxide-mode:off"
@@ -126,6 +130,7 @@ window_settings() {
 handle_binds() {
 	bind_tmuxinator_list=$(cached_tmux_option "@sessionx-bind-tmuxinator-list" "ctrl-/")
 	bind_tree_mode=$(cached_tmux_option "@sessionx-bind-tree-mode" "ctrl-t")
+	bind_panes_mode=$(cached_tmux_option "@sessionx-bind-panes-mode" "ctrl-o")
 	bind_window_mode=$(cached_tmux_option "@sessionx-bind-window-mode" "ctrl-w")
 	bind_configuration_mode=$(cached_tmux_option "@sessionx-bind-configuration-path" "ctrl-x")
 	bind_rename_session=$(cached_tmux_option "@sessionx-bind-rename-session" "ctrl-r")
@@ -142,7 +147,7 @@ handle_binds() {
 
 	enable_preview_scroll=$(cached_tmux_option "@sessionx-enable-preview-scroll" "true")
 	if [[ "$enable_preview_scroll" == "true" ]]; then
-		bind_scroll_up=$(cached_tmux_option "@sessionx-bind-scroll-up" "ctrl-p")
+		bind_scroll_up=$(cached_tmux_option "@sessionx-bind-scroll-up" "ctrl-u")
 		bind_scroll_down=$(cached_tmux_option "@sessionx-bind-scroll-down" "ctrl-d")
 	fi
 
@@ -153,7 +158,9 @@ handle_binds() {
 	bind_sort_asc=$(cached_tmux_option "@sessionx-bind-sort-asc" "ctrl-s")
 	bind_sort_desc=$(cached_tmux_option "@sessionx-bind-sort-desc" "ctrl-a")
 
-	bind_help=$(cached_tmux_option "@sessionx-bind-help" "alt-h")
+	bind_help=$(cached_tmux_option "@sessionx-bind-help" "?")
+	bind_toggle_preview=$(cached_tmux_option "@sessionx-bind-toggle-preview" "ctrl-p")
+	bind_pin=$(cached_tmux_option "@sessionx-bind-pin" "tab")
 	
 	debug_log "Key bindings configured:"
 	debug_log "  kill-session: $bind_kill_session"
@@ -191,36 +198,8 @@ input() {
 			name_width=30
 		fi
 
-		session_data=$(tmux list-sessions -F '#{session_last_attached}|#{session_name}' | sort $sort_order -t'|' -k1)
-
-		while IFS='|' read -r _ name; do
-			[[ -z "$name" ]] && continue
-			if (( ${#name} > name_width )); then
-				name_width=${#name}
-			fi
-		done <<< "$session_data"
-
-		if [[ "$filter_current_session" == "true" ]]; then
-			(while IFS='|' read -r timestamp name; do
-				[[ -z "$name" ]] && continue
-				if [[ -n "$timestamp" ]] && [[ "$timestamp" =~ ^[0-9]+$ ]]; then
-					formatted_time=$(date -r "$timestamp" "+%b %d %H:%M" 2>&1 || echo "Unknown")
-				else
-					formatted_time="Unknown"
-				fi
-				printf "%-${name_width}s | %s\n" "$name" "$formatted_time"
-			done <<< "$session_data" | grep -v "^$CURRENT ") || echo "$CURRENT"
-		else
-			(while IFS='|' read -r timestamp name; do
-				[[ -z "$name" ]] && continue
-				if [[ -n "$timestamp" ]] && [[ "$timestamp" =~ ^[0-9]+$ ]]; then
-					formatted_time=$(date -r "$timestamp" "+%b %d %H:%M" 2>&1 || echo "Unknown")
-				else
-					formatted_time="Unknown"
-				fi
-				printf "%-${name_width}s | %s\n" "$name" "$formatted_time"
-			done <<< "$session_data") || echo "$CURRENT"
-		fi
+		pin_color=$(cached_tmux_option "@sessionx-pin-color" "1;33")
+		render_session_list "$CURRENT" "$filter_current_session" "$sort_order" "$name_width" "$pin_color"
 	fi
 }
 
@@ -367,6 +346,7 @@ ${INPUT}"
 
 	TMUXINATOR_MODE="$bind_tmuxinator_list:reload(tmuxinator list | sed '1d')+change-preview(cat ~/.config/tmuxinator/{}.yml 2>/dev/null)"
 	TREE_MODE="$bind_tree_mode:change-preview(${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/preview.sh -t {1})"
+	PANES_MODE="$bind_panes_mode:change-preview(${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/preview.sh -a {1})"
 	# Validate CONFIGURATION_PATH to prevent command injection
 	if [[ ! -d "$CONFIGURATION_PATH" ]]; then
 		CONFIGURATION_PATH="$HOME/.config"
@@ -383,6 +363,8 @@ ${INPUT}"
 	RELOAD_CMD="$SCRIPT_DIR/reload-sessions.sh $CURRENT"
 	# Keep cursor position after deletion (--track handles this)
 	KILL_SESSION="$bind_kill_session:execute-silent($KILL_SESSION_CMD)+reload($RELOAD_CMD)"
+	PIN_SESSION="$bind_pin:execute-silent($SCRIPT_DIR/toggle-pin.sh {} $DEBUG_MODE $DEBUG_LOG)+reload($RELOAD_CMD)"
+	TOGGLE_PREVIEW="$bind_toggle_preview:toggle-preview"
 	debug_log "KILL_SESSION binding created: $KILL_SESSION"
 
 	ACCEPT="$bind_accept:replace-query+print-query"
@@ -436,14 +418,15 @@ ${INPUT}"
 	fi
 	NEW_SESSION="$bind_new_session:execute($NEW_SESSION_EXEC)+reload($RELOAD_CMD)"
 
-	HELP="$bind_help:change-preview(${SCRIPT_DIR}/help.sh)"
+	HELP="$bind_help:show-preview+change-preview(${SCRIPT_DIR}/help.sh)"
 
 	# Simplified header with only core functions
-	HEADER="[$bind_new_session]new [$bind_kill_session]kill [$bind_rename_session]rename [$bind_window_mode]windows [$bind_help]help"
+	HEADER="[$(short_key "$bind_new_session")]new [$(short_key "$bind_kill_session")]kill [$(short_key "$bind_rename_session")]rename [$(short_key "$bind_window_mode")]win [$(short_key "$bind_panes_mode")]panes [$(short_key "$bind_pin")]pin [$(short_key "$bind_back")]back [$(short_key "$bind_help")]help"
 
 	args=(
 		--bind "$TMUXINATOR_MODE"
 		--bind "$TREE_MODE"
+		--bind "$PANES_MODE"
 		--bind "$CONFIGURATION_MODE"
 		--bind "$WINDOWS_MODE"
 		--bind "$NEW_WINDOW"
@@ -457,7 +440,9 @@ ${INPUT}"
 		--bind "$RENAME_SESSION"
 		--bind "$NEW_SESSION"
 		--bind "$HELP"
-		--bind '?:toggle-preview'
+		--bind "$TOGGLE_PREVIEW"
+		--bind "$PIN_SESSION"
+		--ansi
 		--exit-0
 		--print-query
 		--layout="$layout_mode"

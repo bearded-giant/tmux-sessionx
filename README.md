@@ -139,7 +139,7 @@ There are two ways to create a new session:
 - **Performance**: Batch loading of tmux options, intelligent caching to reduce IPC calls
 - **Reliability**: Comprehensive error handling and graceful exit code management
 - **Testing**: Full test suite including non-interactive tests (`bash test/run_tests.sh`)
-- **Help System**: Enhanced help display with `Ctrl-h` showing all available keybindings
+- **Help System**: Enhanced help display with `?` showing all available keybindings
 - **Session Sorting**: Sessions automatically sorted by last accessed time
 
 - `Enter` on existing session: switch to that session
@@ -147,16 +147,18 @@ There are two ways to create a new session:
 - `Ctrl-s` "session": prompt for a new session name and create it
 - `Alt-d` will delete/kill the selected session
 - `Ctrl-r` "rename": will launch a prompt to rename a session within the list
-- `Ctrl-p` scroll preview up (when `@sessionx-enable-preview-scroll` is 'on')
-- `Ctrl-f` scroll preview down (when `@sessionx-enable-preview-scroll` is 'on')
+- `Tab` "pin": toggles a color highlight on the selected session so the few sessions you are actually working in stand out. Stored as a tmux session option, so it survives reopening sessionx and clears when the session is killed. Color is configurable with `@sessionx-pin-color` (ANSI SGR attributes, default `1;33` = bold yellow)
+- `Ctrl-u` scroll preview up (when `@sessionx-enable-preview-scroll` is 'on')
+- `Ctrl-d` scroll preview down (when `@sessionx-enable-preview-scroll` is 'on')
 - `Ctrl-w` "window": will reload the list with all the available _windows_ and their preview
 - `Ctrl-x` will fuzzy read `~/.config` or a configureable path of your choice (with `@session-x-path`)
 - `Ctrl-e` "expand": will expand `PWD` and search for local directories to create additional session from
 - `Ctrl-b` "back": reloads the first query. Useful when going into window or expand mode, to go back
 - `Ctrl-t` "tree": shows the preview with the tree of sessions+windows familiar from the native session manager (use `Ctrl-b` to return to normal preview)
+- `Ctrl-o` "panes": shows every pane of the selected session's active window stacked in the preview, active pane marked with `*` (use `Ctrl-b` to return to normal preview)
 - `Ctrl-/` "tmuxinator": fetches a list of tmuxinator sessions and previews them
-- `Alt-h` "help": displays a help screen with all keybindings (Alt-h is used instead of Ctrl-h to avoid terminal conflicts)
-- `?` toggles the preview pane
+- `?` "help": displays a help screen with all keybindings in the preview pane (use `Ctrl-b` to return to normal preview)
+- `Ctrl-p` toggles the preview pane
 
 ### Rebind keys:
 
@@ -177,6 +179,10 @@ set -g @sessionx-bind-window-mode 'alt-s'
 # This command opens the tree.
 # By default, it is set to `ctrl-t`.
 set -g @sessionx-bind-tree-mode 'alt-w'
+
+# This command shows all panes of the active window in the preview.
+# By default, it is set to `ctrl-o`.
+set -g @sessionx-bind-panes-mode 'alt-p'
 
 # This command opens the configuration path.
 # By default, it is set to `ctrl-x`.
@@ -219,6 +225,21 @@ set -g @sessionx-bind-abort 'alt-q'
 
 # This command opens the tmuxinator list.
 set -g @sessionx-bind-tmuxinator-list 'alt-t'
+
+# This command toggles the pin highlight on the selected session.
+# By default, it is set to `tab`.
+set -g @sessionx-bind-pin 'alt-i'
+
+# ANSI SGR attributes used to color pinned sessions. Default `1;33` (bold yellow).
+set -g @sessionx-pin-color '1;35'
+
+# This command toggles the preview pane.
+# By default, it is set to `ctrl-p`.
+set -g @sessionx-bind-toggle-preview 'alt-v'
+
+# This command opens the help screen.
+# By default, it is set to `?`.
+set -g @sessionx-bind-help 'alt-h'
 ```
 
 ## [Tmuxinator](https://github.com/tmuxinator/tmuxinator) Integration 🚀
