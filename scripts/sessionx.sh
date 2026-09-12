@@ -384,12 +384,7 @@ ${INPUT}"
 		SCROLL_DOWN=""
 	fi
 
-	# Extract session name before delimiter for rename and trim ALL spaces
-	if [[ "$DEBUG_MODE" == "on" ]]; then
-		RENAME_SESSION_EXEC='bash -c '\''echo "[$(date +%Y-%m-%d\ %H:%M:%S)] RENAME_SESSION: input={}" >> '"$DEBUG_LOG"'; session=$(echo {} | cut -d"|" -f1); session="${session%"${session##*[![:space:]]}"}"; echo "[$(date +%Y-%m-%d\ %H:%M:%S)] RENAME_SESSION: extracted session=$session" >> '"$DEBUG_LOG"'; printf >&2 "New name: ";read name; tmux rename-session -t "$session" "${name}" 2>&1 | sed "s/^/[$(date +%Y-%m-%d\ %H:%M:%S)] RENAME_SESSION: /" >> '"$DEBUG_LOG"''\'''
-	else
-		RENAME_SESSION_EXEC='bash -c '\''session=$(echo {} | cut -d"|" -f1); session="${session%"${session##*[![:space:]]}"}"; printf >&2 "New name: ";read name; tmux rename-session -t "$session" "${name}"; '\'''
-	fi
+	RENAME_SESSION_CMD="$SCRIPT_DIR/rename-session.sh {} $DEBUG_MODE $DEBUG_LOG"
 	# Get sort mode and column width for proper sorting in rename reload
 	if [[ "$sort_mode" == "reverse" ]]; then
 		sort_order_rename="-rn"
@@ -407,7 +402,7 @@ ${INPUT}"
 		name_width_rename=30
 	fi
 	# Use the same reload command as kill session for consistency
-	RENAME_SESSION="$bind_rename_session:execute($RENAME_SESSION_EXEC)+reload($RELOAD_CMD)"
+	RENAME_SESSION="$bind_rename_session:execute($RENAME_SESSION_CMD)+reload($RELOAD_CMD)"
 
 	# New session command
 	if [[ "$DEBUG_MODE" == "on" ]]; then
