@@ -54,8 +54,6 @@ load_tmux_options() {
 		"@sessionx-enable-preview-scroll:true"
 		"@sessionx-bind-select-up:ctrl-n"
 		"@sessionx-bind-select-down:ctrl-m"
-		"@sessionx-bind-sort-asc:ctrl-u"
-		"@sessionx-bind-sort-desc:ctrl-d"
 		"@sessionx-bind-help:?"
 		"@sessionx-bind-toggle-preview:ctrl-p"
 		"@sessionx-bind-pin:tab"
@@ -153,10 +151,6 @@ handle_binds() {
 
 	bind_select_up=$(cached_tmux_option "@sessionx-bind-select-up" "ctrl-n")
 	bind_select_down=$(cached_tmux_option "@sessionx-bind-select-down" "ctrl-m")
-
-	# Changed from ctrl-u/ctrl-d to avoid conflicts with scroll bindings
-	bind_sort_asc=$(cached_tmux_option "@sessionx-bind-sort-asc" "ctrl-s")
-	bind_sort_desc=$(cached_tmux_option "@sessionx-bind-sort-desc" "ctrl-a")
 
 	bind_help=$(cached_tmux_option "@sessionx-bind-help" "?")
 	bind_toggle_preview=$(cached_tmux_option "@sessionx-bind-toggle-preview" "ctrl-p")
@@ -258,23 +252,20 @@ handle_output() {
 		# Trim trailing spaces from fixed-width formatting
 		target="${target%"${target##*[![:space:]]}"}"
 		debug_log "handle_output: after space trim: '$target'"
-		if ! validate_session_name "$target"; then
+		if [[ "$target" == *:* ]]; then
+			session_part="${target%%:*}"
+			window_part="${target#*:}"
+			if ! validate_session_name "$session_part" || [[ ! "$window_part" =~ ^[0-9]+$ ]]; then
+				debug_log "handle_output: window target validation FAILED for '$target'"
+				echo "Error: Invalid window target" >&2
+				exit 1
+			fi
+		elif ! validate_session_name "$target"; then
 			debug_log "handle_output: session name validation FAILED for '$target'"
 			echo "Error: Invalid session name" >&2
 			exit 1
 		fi
-		debug_log "handle_output: session name validation PASSED"
-	elif echo "$raw_output" | grep ':' >/dev/null 2>&1; then
-		# Window mode format: session:window
-		session_name="${raw_output%%:*}"
-		session_name="${session_name%% *}"
-		num="${raw_output#*:}"
-		num="${num%% *}"
-		target="${session_name}:${num}"
-		if ! validate_session_name "$session_name"; then
-			echo "Error: Invalid session name" >&2
-			exit 1
-		fi
+		debug_log "handle_output: target validation PASSED"
 	else
 		# Plain session name without delimiter
 		debug_log "handle_output: plain session name"
@@ -352,15 +343,15 @@ ${INPUT}"
 		CONFIGURATION_PATH="$HOME/.config"
 	fi
 	CONFIGURATION_MODE="$bind_configuration_mode:reload(find '$CONFIGURATION_PATH' -mindepth 1 -maxdepth 1 -type d)+change-preview(ls {})"
-	WINDOWS_MODE="$bind_window_mode:reload(tmux list-windows -a -F '#{session_name}:#{window_index} #{window_name}')+change-preview(${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/preview.sh -w {1})"
+	WINDOWS_MODE="$bind_window_mode:reload(tmux list-windows -a -F '#{session_name}:#{window_index} | #{window_name}')+change-preview(${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/preview.sh -w {1})"
 
 	NEW_WINDOW="$bind_new_window:reload(find $PWD -mindepth 1 -maxdepth 1 -type d)+change-preview(ls {})"
 	# Use reload script for back functionality too
-	BACK="$bind_back:reload($SCRIPT_DIR/reload-sessions.sh $CURRENT)+change-preview(${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/preview.sh ${PREVIEW_OPTIONS} {1})"
+	BACK="$bind_back:reload($SCRIPT_DIR/reload-sessions.sh '$CURRENT')+change-preview(${TMUX_PLUGIN_MANAGER_PATH%/}/tmux-sessionx/scripts/preview.sh ${PREVIEW_OPTIONS} {1})"
 	# Use helper script for cleaner execution
 	KILL_SESSION_CMD="$SCRIPT_DIR/kill-session.sh {} $DEBUG_MODE $DEBUG_LOG"
 	# Use simpler reload script
-	RELOAD_CMD="$SCRIPT_DIR/reload-sessions.sh $CURRENT"
+	RELOAD_CMD="$SCRIPT_DIR/reload-sessions.sh '$CURRENT'"
 	# Keep cursor position after deletion (--track handles this)
 	KILL_SESSION="$bind_kill_session:execute-silent($KILL_SESSION_CMD)+reload($RELOAD_CMD)"
 	PIN_SESSION="$bind_pin:execute-silent($SCRIPT_DIR/toggle-pin.sh {} $DEBUG_MODE $DEBUG_LOG)+reload($RELOAD_CMD)"
@@ -380,10 +371,6 @@ ${INPUT}"
 		SCROLL_UP=""
 		SCROLL_DOWN=""
 	fi
-
-	# Disable sort commands for now - they're complex and conflict with other bindings
-	SORT_ASC=""
-	SORT_DESC=""
 
 	# Extract session name before delimiter for rename and trim ALL spaces
 	if [[ "$DEBUG_MODE" == "on" ]]; then

@@ -32,11 +32,6 @@ cat << 'EOF'
 │ Ctrl-u           Scroll preview up (if enabled in config)               │
 │ Ctrl-d           Scroll preview down (if enabled in config)             │
 │                                                                         │
-│ Sorting                                                                 │
-│ ─────────────────────────────────────────────────────────────────────── │
-│ Ctrl-s           Sort list ascending                                    │
-│ Ctrl-a           Sort list descending                                   │
-│                                                                         │
 │ Tips                                                                    │
 │ ─────────────────────────────────────────────────────────────────────── │
 │ • Type a new name and press Enter to create a new session               │

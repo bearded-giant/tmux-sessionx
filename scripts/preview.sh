@@ -33,8 +33,7 @@ display_session() {
 }
 
 window_mode() {
-	args=($1)
-	tmux capture-pane -ep -t "${args[0]}"
+	tmux capture-pane -ep -t "${1}"
 }
 
 panes_mode() {

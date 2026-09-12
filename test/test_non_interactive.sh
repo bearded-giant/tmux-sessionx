@@ -32,10 +32,10 @@ test_function() {
     echo -n "Testing $test_name... "
     if eval "$test_cmd" >/dev/null 2>&1; then
         echo -e "${GREEN}PASSED${NC}"
-        ((TESTS_PASSED++))
+        TESTS_PASSED=$((TESTS_PASSED + 1))
     else
         echo -e "${RED}FAILED${NC}"
-        ((TESTS_FAILED++))
+        TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
 }
 
