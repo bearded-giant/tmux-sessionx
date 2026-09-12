@@ -516,6 +516,7 @@ run_plugin() {
 		debug_log "Debug mode enabled"
 	fi
 	
+	restore_session_meta
 	preview_settings
 	window_settings
 	handle_binds

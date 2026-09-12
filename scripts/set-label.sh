@@ -23,6 +23,7 @@ if [[ -z "$label" ]]; then
 else
 	tmux set-option -t "$SESSION_NAME" @sessionx-label "$label"
 fi
+save_session_meta "$SESSION_NAME"
 
 if [[ "$DEBUG_MODE" == "on" ]]; then
 	echo "[$(date '+%Y-%m-%d %H:%M:%S')] SET_LABEL: '$SESSION_NAME' -> '$label'" >> "$DEBUG_LOG"

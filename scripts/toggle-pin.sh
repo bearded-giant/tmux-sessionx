@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/common.sh"
+
 SESSION_NAME="${1%%|*}"
 SESSION_NAME="${SESSION_NAME%"${SESSION_NAME##*[![:space:]]}"}"
 DEBUG_MODE="${2:-off}"
@@ -17,6 +20,7 @@ else
 	tmux set-option -t "$SESSION_NAME" @sessionx-pinned 1
 	state="pinned"
 fi
+save_session_meta "$SESSION_NAME"
 
 if [[ "$DEBUG_MODE" == "on" ]]; then
 	echo "[$(date '+%Y-%m-%d %H:%M:%S')] TOGGLE_PIN: $state '$SESSION_NAME'" >> "$DEBUG_LOG"

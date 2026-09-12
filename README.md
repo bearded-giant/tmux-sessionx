@@ -149,7 +149,7 @@ There are two ways to create a new session:
 - `Ctrl-s` "session": prompt for a new session name and create it
 - `Alt-d` will kill the selected session after a `y/N` prompt. Disable the prompt with `set -g @sessionx-confirm-kill 'off'`
 - `Ctrl-r` "rename": will launch a prompt to rename a session within the list
-- `Tab` "pin": toggles a color highlight on the selected session so the few sessions you are actually working in stand out. Stored as a tmux session option, so it survives reopening sessionx and clears when the session is killed. Color is configurable with `@sessionx-pin-color` (ANSI SGR attributes, default `1;33` = bold yellow)
+- `Tab` "pin": toggles a color highlight on the selected session so the few sessions you are actually working in stand out. Stored as a tmux session option, so it survives reopening sessionx and clears when the session is killed. Pins and labels are also written to `~/.local/state/sessionx/sessions` (or `$XDG_STATE_HOME/sessionx/sessions`) and re-applied on open to any live session with the same name, so they come back after tmux-resurrect restores your sessions. Color is configurable with `@sessionx-pin-color` (ANSI SGR attributes, default `1;33` = bold yellow)
 - `Shift-Tab` "pins": filters the list down to pinned sessions (use `Ctrl-b` to return to the full list)
 - `Ctrl-l` "label": prompts for a short free-text label shown next to the session in the list (what you are doing there today). Empty input clears it. Stored as the tmux session option `@sessionx-label`
 - `Ctrl-u` scroll preview up (when `@sessionx-enable-preview-scroll` is 'on')

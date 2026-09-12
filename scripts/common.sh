@@ -104,3 +104,48 @@ render_session_list() {
 		echo "$output"
 	fi
 }
+
+SESSIONX_STATE_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/sessionx/sessions"
+
+save_session_meta() {
+	local name="$1" pinned label tmp
+	pinned=$(tmux show-option -t "$name" -qv @sessionx-pinned 2>/dev/null || true)
+	label=$(tmux show-option -t "$name" -qv @sessionx-label 2>/dev/null || true)
+	mkdir -p "$(dirname "$SESSIONX_STATE_FILE")"
+	touch "$SESSIONX_STATE_FILE"
+	tmp=$(mktemp)
+	awk -F'|' -v n="$name" '$1 != n' "$SESSIONX_STATE_FILE" > "$tmp"
+	if [[ -n "$pinned$label" ]]; then
+		printf '%s|%s|%s\n' "$name" "$pinned" "$label" >> "$tmp"
+	fi
+	mv "$tmp" "$SESSIONX_STATE_FILE"
+}
+
+forget_session_meta() {
+	local name="$1" tmp
+	[[ -f "$SESSIONX_STATE_FILE" ]] || return 0
+	tmp=$(mktemp)
+	awk -F'|' -v n="$name" '$1 != n' "$SESSIONX_STATE_FILE" > "$tmp"
+	mv "$tmp" "$SESSIONX_STATE_FILE"
+}
+
+restore_session_meta() {
+	[[ -f "$SESSIONX_STATE_FILE" ]] || return 0
+	local name pinned label live_name live_pinned live_label
+	declare -A seen live_pinned_by live_label_by
+	while IFS='|' read -r live_name live_pinned live_label; do
+		[[ -z "$live_name" ]] && continue
+		seen[$live_name]=1
+		live_pinned_by[$live_name]="$live_pinned"
+		live_label_by[$live_name]="$live_label"
+	done < <(tmux list-sessions -F '#{session_name}|#{@sessionx-pinned}|#{@sessionx-label}')
+	while IFS='|' read -r name pinned label; do
+		[[ -z "$name" || -z "${seen[$name]:-}" ]] && continue
+		if [[ -n "$pinned" && -z "${live_pinned_by[$name]:-}" ]]; then
+			tmux set-option -t "$name" @sessionx-pinned 1
+		fi
+		if [[ -n "$label" && -z "${live_label_by[$name]:-}" ]]; then
+			tmux set-option -t "$name" @sessionx-label "$label"
+		fi
+	done < "$SESSIONX_STATE_FILE"
+}

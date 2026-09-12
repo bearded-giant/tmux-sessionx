@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/common.sh"
+
 # Helper script for killing sessions with proper debugging
 SESSION_INPUT="$1"
 DEBUG_MODE="${2:-off}"
@@ -33,6 +36,7 @@ if [[ "$CONFIRM" == "on" && -t 0 ]]; then
 fi
 
 if tmux kill-session -t "$SESSION_NAME" 2>&1; then
+    forget_session_meta "$SESSION_NAME"
     if [[ "$DEBUG_MODE" == "on" ]]; then
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] KILL_SESSION: successfully killed session '$SESSION_NAME'" >> "$DEBUG_LOG"
     fi
