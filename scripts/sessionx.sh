@@ -57,6 +57,7 @@ load_tmux_options() {
 		"@sessionx-bind-help:?"
 		"@sessionx-bind-toggle-preview:ctrl-p"
 		"@sessionx-bind-pin:tab"
+		"@sessionx-bind-pinned-filter:btab"
 		"@sessionx-pin-color:1;33"
 		"@sessionx-filter-current:true"
 		"@sessionx-custom-paths:"
@@ -155,6 +156,7 @@ handle_binds() {
 	bind_help=$(cached_tmux_option "@sessionx-bind-help" "?")
 	bind_toggle_preview=$(cached_tmux_option "@sessionx-bind-toggle-preview" "ctrl-p")
 	bind_pin=$(cached_tmux_option "@sessionx-bind-pin" "tab")
+	bind_pinned_filter=$(cached_tmux_option "@sessionx-bind-pinned-filter" "btab")
 	
 	debug_log "Key bindings configured:"
 	debug_log "  kill-session: $bind_kill_session"
@@ -356,6 +358,7 @@ ${INPUT}"
 	KILL_SESSION="$bind_kill_session:execute-silent($KILL_SESSION_CMD)+reload($RELOAD_CMD)"
 	PIN_SESSION="$bind_pin:execute-silent($SCRIPT_DIR/toggle-pin.sh {} $DEBUG_MODE $DEBUG_LOG)+reload($RELOAD_CMD)"
 	TOGGLE_PREVIEW="$bind_toggle_preview:toggle-preview"
+	PINNED_FILTER="$bind_pinned_filter:reload($SCRIPT_DIR/reload-sessions.sh '$CURRENT' pinned)"
 	debug_log "KILL_SESSION binding created: $KILL_SESSION"
 
 	ACCEPT="$bind_accept:replace-query+print-query"
@@ -407,7 +410,7 @@ ${INPUT}"
 
 	HELP="$bind_help:show-preview+change-preview(${SCRIPT_DIR}/help.sh)"
 
-	HEADER="[$(short_key "$bind_new_session")]new [$(short_key "$bind_kill_session")]kill [$(short_key "$bind_rename_session")]rename [$(short_key "$bind_pin")]pin"
+	HEADER="[$(short_key "$bind_new_session")]new [$(short_key "$bind_kill_session")]kill [$(short_key "$bind_rename_session")]rename [$(short_key "$bind_pin")]pin [$(short_key "$bind_pinned_filter")]pins"
 	LIST_HEADER="[$(short_key "$bind_window_mode")]win [$(short_key "$bind_panes_mode")]panes [$(short_key "$bind_tree_mode")]tree [$(short_key "$bind_back")]back
 [$(short_key "$bind_toggle_preview")]preview [$(short_key "$bind_new_window")]dirs [$(short_key "$bind_configuration_mode")]config [$(short_key "$bind_help")]help"
 
@@ -430,6 +433,7 @@ ${INPUT}"
 		--bind "$HELP"
 		--bind "$TOGGLE_PREVIEW"
 		--bind "$PIN_SESSION"
+		--bind "$PINNED_FILTER"
 		--ansi
 		--header "$LIST_HEADER"
 		--exit-0

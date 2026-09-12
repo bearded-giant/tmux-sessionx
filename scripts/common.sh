@@ -59,11 +59,12 @@ short_key() {
 	local key="$1"
 	key="${key//ctrl-/C-}"
 	key="${key//alt-/M-}"
+	key="${key/btab/S-tab}"
 	echo "$key"
 }
 
 render_session_list() {
-	local current="$1" filter_current="$2" sort_order="$3" name_width="$4" pin_color="$5"
+	local current="$1" filter_current="$2" sort_order="$3" name_width="$4" pin_color="$5" pinned_only="${6:-false}"
 	local session_data timestamp pinned name formatted_time output
 	session_data=$(tmux list-sessions -F '#{session_last_attached}|#{@sessionx-pinned}|#{session_name}' | sort $sort_order -t'|' -k1)
 
@@ -77,6 +78,7 @@ render_session_list() {
 	output=$(while IFS='|' read -r timestamp pinned name; do
 		[[ -z "$name" ]] && continue
 		[[ "$filter_current" == "true" && "$name" == "$current" ]] && continue
+		[[ "$pinned_only" == "true" && -z "$pinned" ]] && continue
 		if [[ "$timestamp" =~ ^[0-9]+$ ]]; then
 			formatted_time=$(date -r "$timestamp" "+%b %d %H:%M" 2>/dev/null || echo "Unknown")
 		else

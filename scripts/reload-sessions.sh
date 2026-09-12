@@ -9,6 +9,10 @@ filter_current=$(tmux_option_or_fallback "@sessionx-filter-current" "true")
 sort_mode=$(tmux_option_or_fallback "@sessionx-sort" "default")
 preview_location=$(tmux_option_or_fallback "@sessionx-preview-location" "top")
 pin_color=$(tmux_option_or_fallback "@sessionx-pin-color" "1;33")
+pinned_only="false"
+if [[ "${2:-}" == "pinned" ]]; then
+    pinned_only="true"
+fi
 
 if [[ "$sort_mode" == "reverse" ]]; then
     sort_order="-rn"
@@ -22,4 +26,4 @@ else
     name_width=30
 fi
 
-render_session_list "$CURRENT" "$filter_current" "$sort_order" "$name_width" "$pin_color"
+render_session_list "$CURRENT" "$filter_current" "$sort_order" "$name_width" "$pin_color" "$pinned_only"
