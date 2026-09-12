@@ -465,7 +465,7 @@ ${INPUT}"
 		-p "$window_width,$window_height"
 		--prompt "$prompt_icon"
 		--scrollbar '▌▐'
-		--delimiter ' | '
+		--delimiter ' \| '
 	)
 	
 	if [[ "$preview_enabled" == "true" ]]; then
