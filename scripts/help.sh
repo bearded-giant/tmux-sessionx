@@ -16,6 +16,7 @@ cat << 'EOF'
 │ Ctrl-r           Rename selected session                                │
 │ Tab              Toggle pin highlight on selected session               │
 │ Shift-Tab        Show only pinned sessions (Ctrl-b to go back)          │
+│ Ctrl-l           Set a one-line label on selected session               │
 │                                                                         │
 │ View Modes                                                              │
 │ ─────────────────────────────────────────────────────────────────────── │

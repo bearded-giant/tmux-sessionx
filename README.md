@@ -149,6 +149,7 @@ There are two ways to create a new session:
 - `Ctrl-r` "rename": will launch a prompt to rename a session within the list
 - `Tab` "pin": toggles a color highlight on the selected session so the few sessions you are actually working in stand out. Stored as a tmux session option, so it survives reopening sessionx and clears when the session is killed. Color is configurable with `@sessionx-pin-color` (ANSI SGR attributes, default `1;33` = bold yellow)
 - `Shift-Tab` "pins": filters the list down to pinned sessions (use `Ctrl-b` to return to the full list)
+- `Ctrl-l` "label": prompts for a short free-text label shown next to the session in the list (what you are doing there today). Empty input clears it. Stored as the tmux session option `@sessionx-label`
 - `Ctrl-u` scroll preview up (when `@sessionx-enable-preview-scroll` is 'on')
 - `Ctrl-d` scroll preview down (when `@sessionx-enable-preview-scroll` is 'on')
 - `Ctrl-w` "window": will reload the list with all the available _windows_ and their preview
@@ -234,6 +235,10 @@ set -g @sessionx-bind-pin 'alt-i'
 # This command filters the list to pinned sessions only.
 # By default, it is set to `btab` (shift-tab).
 set -g @sessionx-bind-pinned-filter 'alt-o'
+
+# This command sets a label on the selected session.
+# By default, it is set to `ctrl-l`.
+set -g @sessionx-bind-label 'alt-l'
 
 # ANSI SGR attributes used to color pinned sessions. Default `1;33` (bold yellow).
 set -g @sessionx-pin-color '1;35'

@@ -65,17 +65,17 @@ short_key() {
 
 render_session_list() {
 	local current="$1" filter_current="$2" sort_order="$3" name_width="$4" pin_color="$5" pinned_only="${6:-false}"
-	local session_data timestamp pinned name formatted_time output
-	session_data=$(tmux list-sessions -F '#{session_last_attached}|#{@sessionx-pinned}|#{session_name}' | sort $sort_order -t'|' -k1)
+	local session_data timestamp pinned name label formatted_time output row
+	session_data=$(tmux list-sessions -F '#{session_last_attached}|#{@sessionx-pinned}|#{session_name}|#{@sessionx-label}' | sort $sort_order -t'|' -k1,1)
 
-	while IFS='|' read -r _ _ name; do
+	while IFS='|' read -r _ _ name _; do
 		[[ -z "$name" ]] && continue
 		if (( ${#name} > name_width )); then
 			name_width=${#name}
 		fi
 	done <<< "$session_data"
 
-	output=$(while IFS='|' read -r timestamp pinned name; do
+	output=$(while IFS='|' read -r timestamp pinned name label; do
 		[[ -z "$name" ]] && continue
 		[[ "$filter_current" == "true" && "$name" == "$current" ]] && continue
 		[[ "$pinned_only" == "true" && -z "$pinned" ]] && continue
@@ -84,10 +84,14 @@ render_session_list() {
 		else
 			formatted_time="Unknown"
 		fi
+		row=$(printf "%-${name_width}s | %s" "$name" "$formatted_time")
+		if [[ -n "$label" ]]; then
+			row+=" | $label"
+		fi
 		if [[ -n "$pinned" ]]; then
-			printf "\033[%sm%-${name_width}s | %s\033[0m\n" "$pin_color" "$name" "$formatted_time"
+			printf "\033[%sm%s\033[0m\n" "$pin_color" "$row"
 		else
-			printf "%-${name_width}s | %s\n" "$name" "$formatted_time"
+			printf "%s\n" "$row"
 		fi
 	done <<< "$session_data")
 
