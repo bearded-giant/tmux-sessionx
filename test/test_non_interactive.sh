@@ -167,6 +167,9 @@ tmux set-option -p -t "$CLAUDE_A" @claude_state ask
 tmux set-option -p -t "$CLAUDE_A" @claude_state_at $(($(date +%s) - 600))
 tmux new-session -d -s "$CLAUDE_B" "$FAKE_BIN/claude -c 'printf \"❯ \\n\"; sleep 60; :'"
 tmux set-option -p -t "$CLAUDE_B" @claude_state busy
+CLAUDE_C="sx-claude-c-$$"
+# a finished claude leaves its spinner in scrollback; seq pushes it off screen
+tmux new-session -d -s "$CLAUDE_C" "$FAKE_BIN/claude -c 'printf \"✳ Germinating… (0s)\\n\"; seq 30; printf \"❯ \\n\"; sleep 60; :'"
 sleep 0.5
 
 test_function "lone claude pane shows hook state and idle age" "
@@ -175,6 +178,10 @@ test_function "lone claude pane shows hook state and idle age" "
 
 test_function "stale hook busy is corrected by the screen" "
     bash '$SCRIPT_DIR/reload-sessions.sh' x | grep '$CLAUDE_B ' | grep -q '| ready\$'
+"
+
+test_function "spinner in scrollback does not count as busy" "
+    bash '$SCRIPT_DIR/reload-sessions.sh' x | grep '$CLAUDE_C ' | grep -q '| ready\$'
 "
 
 PANE_READY=$(tmux split-window -d -P -F '#{pane_id}' -t "$CLAUDE_A" "$FAKE_CLAUDE")
@@ -194,6 +201,7 @@ test_function "dead claude pane is skipped" "
 
 tmux kill-session -t "$CLAUDE_A"
 tmux kill-session -t "$CLAUDE_B"
+tmux kill-session -t "$CLAUDE_C"
 rm -r "${FAKE_BIN:?}"
 
 # Summary

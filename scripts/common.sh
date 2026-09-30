@@ -66,7 +66,8 @@ short_key() {
 claude_screen_state() {
 	# ponytail: greps Claude Code's TUI strings; breaks when its wording changes
 	local tail
-	tail=$(tmux capture-pane -p -t "$1" -S -40 2>/dev/null) || return 0
+	# visible screen only: scrollback keeps dead spinners and prompts from earlier claudes
+	tail=$(tmux capture-pane -p -t "$1" 2>/dev/null) || return 0
 	if grep -q -E -e 'Esc to cancel' -e '^[[:space:]]*❯ [0-9]+\. ' <<< "$tail"; then
 		echo "ask"
 	elif grep -q -E -e 'esc to interrupt' -e '^[^[:space:]]+ [A-Z][a-z]+… \(' <<< "$tail"; then
