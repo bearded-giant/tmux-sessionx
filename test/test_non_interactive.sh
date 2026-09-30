@@ -151,6 +151,51 @@ test_function "kill-session.sh handles input correctly" "
     )
 "
 
+# 8. Test claude status column
+echo -e "\n${BLUE}8. Testing claude status column${NC}"
+echo "------------------------"
+
+# a copied binary, not a symlink: tmux reports the real binary name for symlinks
+FAKE_BIN=$(mktemp -d)
+cp "$(command -v bash)" "$FAKE_BIN/claude"
+# trailing ':' stops bash from exec-ing sleep, which would rename the pane command
+FAKE_CLAUDE="$FAKE_BIN/claude -c 'sleep 60; :'"
+CLAUDE_A="sx-claude-a-$$"
+CLAUDE_B="sx-claude-b-$$"
+tmux new-session -d -s "$CLAUDE_A" "$FAKE_CLAUDE"
+tmux set-option -p -t "$CLAUDE_A" @claude_state ask
+tmux set-option -p -t "$CLAUDE_A" @claude_state_at $(($(date +%s) - 600))
+tmux new-session -d -s "$CLAUDE_B" "$FAKE_BIN/claude -c 'printf \"❯ \\n\"; sleep 60; :'"
+tmux set-option -p -t "$CLAUDE_B" @claude_state busy
+sleep 0.5
+
+test_function "lone claude pane shows hook state and idle age" "
+    bash '$SCRIPT_DIR/reload-sessions.sh' x | grep '$CLAUDE_A ' | grep -q '| ask 10m\$'
+"
+
+test_function "stale hook busy is corrected by the screen" "
+    bash '$SCRIPT_DIR/reload-sessions.sh' x | grep '$CLAUDE_B ' | grep -q '| ready\$'
+"
+
+PANE_READY=$(tmux split-window -d -P -F '#{pane_id}' -t "$CLAUDE_A" "$FAKE_CLAUDE")
+tmux set-option -p -t "$PANE_READY" @claude_state ready
+
+test_function "several claude panes show counts per state" "
+    bash '$SCRIPT_DIR/reload-sessions.sh' x | grep '$CLAUDE_A ' | grep -q '| ask 1 · ready 1\$'
+"
+
+tmux set-option -p -t "$PANE_READY" remain-on-exit on
+tmux respawn-pane -k -t "$PANE_READY" "$FAKE_BIN/claude -c ':'"
+sleep 0.3
+
+test_function "dead claude pane is skipped" "
+    bash '$SCRIPT_DIR/reload-sessions.sh' x | grep '$CLAUDE_A ' | grep -q '| ask 10m\$'
+"
+
+tmux kill-session -t "$CLAUDE_A"
+tmux kill-session -t "$CLAUDE_B"
+rm -r "${FAKE_BIN:?}"
+
 # Summary
 echo
 echo "==========================================="

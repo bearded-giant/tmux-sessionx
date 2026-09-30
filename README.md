@@ -130,7 +130,9 @@ Launching the plugin pops up an fzf-tmux "popup" with fuzzy search over existing
 
 Each row shows `name | last attached | window count | claude status | label`. The window count gets a `!` suffix when tmux has flagged activity or a bell in one of that session's windows (requires `set -g monitor-activity on` or `monitor-bell on` in your tmux config; the flag clears when you visit the window).
 
-The claude status column appears for sessions with a Claude Code pane: `ask` when it is waiting on a permission or question prompt, `ready` when it is idle at the input box, `busy` while it is working. It is a heuristic over the pane's last 40 lines, so it will drift when Claude Code changes its UI wording. Turn it off with `set -g @sessionx-claude-status 'off'`.
+The claude status column appears for sessions with a Claude Code pane: `ask` when it is waiting on a permission or question prompt, `ready` when it is idle at the input box, `busy` while it is working. A session with one Claude shows its state, plus how long it has been waiting when the hook below is set up (`ready 12m`). A session with several shows a count per state, like `ask 1 · busy 2`, and the preview lists each Claude pane with its `window.pane`, state, age and directory. Turn it off with `set -g @sessionx-claude-status 'off'`.
+
+State comes from two pane options any Claude Code hook can set: `@claude_state` (`busy`, `ready` or `ask`) and `@claude_state_at` (unix seconds). Set `busy` on UserPromptSubmit and PostToolUse, `ask` on PermissionRequest (it fires for AskUserQuestion too), `ready` on SessionStart and Stop, and unset both on SessionEnd. One `tmux set-option -p -t "$TMUX_PANE" @claude_state ready \; set-option -p -t "$TMUX_PANE" @claude_state_at "$(date +%s)"` per event does it. Panes without the options fall back to a heuristic over the pane's last 40 lines, which drifts when Claude Code changes its UI wording. Pressing Esc on a prompt or mid-turn fires no hook, so an `ask` or `busy` from the hook gets checked against the screen, and the screen wins.
 
 ### Creating New Sessions
 There are two ways to create a new session:

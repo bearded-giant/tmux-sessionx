@@ -6,6 +6,9 @@
 #   https://github.com/petobens/dotfiles/blob/master/tmux/tmux_tree
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/common.sh"
+
 single_mode() {
 	session_name="${1}"
 	if test "${DISPLAY_TMUXP}" -eq 1; then
@@ -28,6 +31,11 @@ display_session() {
 	session_id=$(tmux ls -F '#{session_id}' -f "#{==:#{session_name},${session_name}}")
 	if test -z "${session_id}"; then
 		return 1
+	fi
+	if test "$(tmux show-option -gqv @sessionx-claude-status)" != "off"; then
+		claude_panes -s -t "${session_id}" | while IFS='|' read -r _ where state age path; do
+			printf '\033[1;33mclaude %s  %s%s  %s\033[0m\n' "${where}" "${state}" "${age:+ ${age}}" "${path/#"${HOME}"/\~}"
+		done
 	fi
 	tmux capture-pane -ep -t "${session_id}"
 }

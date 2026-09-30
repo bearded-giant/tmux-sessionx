@@ -63,28 +63,73 @@ short_key() {
 	echo "$key"
 }
 
-claude_status_map() {
+claude_screen_state() {
 	# ponytail: greps Claude Code's TUI strings; breaks when its wording changes
-	local pane_data session pane cmd tail status
-	pane_data=$(tmux list-panes -a -F '#{session_name}|#{pane_id}|#{pane_current_command}')
-	while IFS='|' read -r session pane cmd; do
-		[[ "$cmd" =~ ^[0-9]+\.[0-9]+\.[0-9]+$|^claude$|^node$ ]] || continue
-		tail=$(tmux capture-pane -p -t "$pane" -S -40 2>/dev/null) || continue
-		if grep -q -E -e 'Esc to cancel' -e '^[[:space:]]*❯ [0-9]+\. ' <<< "$tail"; then
-			status="ask"
-		elif grep -q -E -e 'esc to interrupt' -e '^[^[:space:]]+ [A-Z][a-z]+… \(' <<< "$tail"; then
-			status="busy"
-		elif grep -q -e '^❯' -e '⏵⏵' <<< "$tail"; then
-			status="ready"
-		else
+	local tail
+	tail=$(tmux capture-pane -p -t "$1" -S -40 2>/dev/null) || return 0
+	if grep -q -E -e 'Esc to cancel' -e '^[[:space:]]*❯ [0-9]+\. ' <<< "$tail"; then
+		echo "ask"
+	elif grep -q -E -e 'esc to interrupt' -e '^[^[:space:]]+ [A-Z][a-z]+… \(' <<< "$tail"; then
+		echo "busy"
+	elif grep -q -e '^❯' -e '⏵⏵' <<< "$tail"; then
+		echo "ready"
+	fi
+}
+
+format_age() {
+	local minutes=$(($1 / 60))
+	if ((minutes < 60)); then
+		echo "${minutes}m"
+	else
+		printf '%dh%02dm\n' $((minutes / 60)) $((minutes % 60))
+	fi
+}
+
+claude_panes() {
+	local now session pane where dead cmd state at path scraped
+	now=$(date +%s)
+	tmux list-panes "$@" -F '#{session_name}|#{pane_id}|#{window_index}.#{pane_index}|#{pane_dead}|#{pane_current_command}|#{@claude_state}|#{@claude_state_at}|#{pane_current_path}' |
+		while IFS='|' read -r session pane where dead cmd state at path; do
+			[[ "$dead" == "0" && "$cmd" =~ ^[0-9]+\.[0-9]+\.[0-9]+$|^claude$|^node$ ]] || continue
+			# esc on a prompt or mid-turn fires no hook, so a hook ask/busy can be stale
+			if [[ "$state" != "ready" ]]; then
+				scraped=$(claude_screen_state "$pane")
+				if [[ -n "$scraped" && "$scraped" != "$state" ]]; then
+					state="$scraped"
+					at=""
+				fi
+			fi
+			[[ -n "$state" ]] || continue
+			if [[ "$state" == "busy" || ! "$at" =~ ^[0-9]+$ ]]; then
+				at=""
+			else
+				at=$(format_age $((now - at)))
+			fi
+			printf '%s|%s|%s|%s|%s\n' "$session" "$where" "$state" "$at" "$path"
+		done
+}
+
+claude_status_map() {
+	local session state age
+	declare -A total=() count=() single=()
+	while IFS='|' read -r session _ state age _; do
+		total["$session"]=$((${total["$session"]:-0} + 1))
+		count["$session|$state"]=$((${count["$session|$state"]:-0} + 1))
+		single["$session"]="$state${age:+ $age}"
+	done < <(claude_panes -a)
+	for session in "${!total[@]}"; do
+		# string compare: (( )) would re-evaluate the session name as arithmetic
+		if [[ "${total["$session"]}" == "1" ]]; then
+			CLAUDE_STATUS["$session"]="${single["$session"]}"
 			continue
 		fi
-		case "${CLAUDE_STATUS[$session]:-}" in
-		ask) ;;
-		ready) [[ "$status" == "ask" ]] && CLAUDE_STATUS[$session]="$status" ;;
-		*) CLAUDE_STATUS[$session]="$status" ;;
-		esac
-	done <<< "$pane_data"
+		CLAUDE_STATUS["$session"]=""
+		for state in ask ready busy; do
+			if [[ -n "${count["$session|$state"]:-}" ]]; then
+				CLAUDE_STATUS["$session"]+="${CLAUDE_STATUS["$session"]:+ · }$state ${count["$session|$state"]}"
+			fi
+		done
+	done
 }
 
 render_session_list() {
