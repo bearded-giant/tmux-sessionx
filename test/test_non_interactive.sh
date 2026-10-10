@@ -186,6 +186,11 @@ test_function "spinner in scrollback does not count as busy" "
     bash '$SCRIPT_DIR/reload-sessions.sh' x | plain | grep '$CLAUDE_C ' | grep -q '| ready\$'
 "
 
+tmux set-option -p -t "$CLAUDE_C" @claude_attention "MR !1: 1 thread(s) need your sign-off"
+test_function "babysit attention shows as ask over a ready screen" "
+    bash '$SCRIPT_DIR/reload-sessions.sh' x | plain | grep '$CLAUDE_C ' | grep -q '| ask\$'
+"
+
 PANE_READY=$(tmux split-window -d -P -F '#{pane_id}' -t "$CLAUDE_A" "$FAKE_CLAUDE")
 tmux set-option -p -t "$PANE_READY" @claude_state ready
 

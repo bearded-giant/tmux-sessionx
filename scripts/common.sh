@@ -87,13 +87,16 @@ format_age() {
 }
 
 claude_panes() {
-	local now session pane where dead cmd state at path scraped
+	local now session pane where dead cmd state at path attention scraped
 	now=$(date +%s)
-	tmux list-panes "$@" -F '#{session_name}|#{pane_id}|#{window_index}.#{pane_index}|#{pane_dead}|#{pane_current_command}|#{@claude_state}|#{@claude_state_at}|#{pane_current_path}' |
-		while IFS='|' read -r session pane where dead cmd state at path; do
+	tmux list-panes "$@" -F '#{session_name}|#{pane_id}|#{window_index}.#{pane_index}|#{pane_dead}|#{pane_current_command}|#{@claude_state}|#{@claude_state_at}|#{pane_current_path}|#{@claude_attention}' |
+		while IFS='|' read -r session pane where dead cmd state at path attention; do
 			[[ "$dead" == "0" && "$cmd" =~ ^[0-9]+\.[0-9]+\.[0-9]+$|^claude$|^node$ ]] || continue
+			# a babysit loop idles at its prompt while a sign-off waits on you
+			if [[ -n "$attention" ]]; then
+				state="ask"
 			# esc on a prompt or mid-turn fires no hook, so a hook ask/busy can be stale
-			if [[ "$state" != "ready" ]]; then
+			elif [[ "$state" != "ready" ]]; then
 				scraped=$(claude_screen_state "$pane")
 				if [[ -n "$scraped" && "$scraped" != "$state" ]]; then
 					state="$scraped"
