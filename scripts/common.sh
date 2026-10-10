@@ -184,6 +184,7 @@ render_session_list() {
 }
 
 SESSIONX_STATE_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/sessionx/sessions"
+SESSIONX_SPLIT_FILE="${SESSIONX_STATE_FILE%/*}/list-pane-width"
 
 save_session_meta() {
 	local name="$1" pinned label tmp

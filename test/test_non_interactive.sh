@@ -219,6 +219,35 @@ tmux kill-session -t "$CLAUDE_B"
 tmux kill-session -t "$CLAUDE_C"
 rm -r "${FAKE_BIN:?}"
 
+# 9. Test split persistence
+echo -e "\n${BLUE}9. Testing split persistence${NC}"
+echo "------------------------"
+
+SPLIT_STATE=$(mktemp -d)
+split() { XDG_STATE_HOME="$SPLIT_STATE" bash "$SCRIPT_DIR/save-split.sh" "$@"; }
+
+test_function "undragged split is not saved" "
+    FZF_COLUMNS=150 FZF_PREVIEW_LEFT=55 split start
+    FZF_COLUMNS=150 FZF_PREVIEW_LEFT=55 FZF_PREVIEW_COLUMNS=93 split end 65
+    [[ ! -f '$SPLIT_STATE/sessionx/list-pane-width' ]]
+"
+
+# preview grew 19 columns from floor(150 * 65%) = 97 to 116, 77% of 150
+test_function "dragged split saves the list percent" "
+    FZF_COLUMNS=150 FZF_PREVIEW_LEFT=55 split start
+    FZF_COLUMNS=150 FZF_PREVIEW_LEFT=36 FZF_PREVIEW_COLUMNS=112 split end 65
+    [[ \$(cat '$SPLIT_STATE/sessionx/list-pane-width') == 23 ]]
+"
+
+test_function "split is not saved when the popup was resized" "
+    rm -f '$SPLIT_STATE/sessionx/list-pane-width'
+    FZF_COLUMNS=150 FZF_PREVIEW_LEFT=55 split start
+    FZF_COLUMNS=120 FZF_PREVIEW_LEFT=36 FZF_PREVIEW_COLUMNS=80 split end 65
+    [[ ! -f '$SPLIT_STATE/sessionx/list-pane-width' ]]
+"
+
+rm -r "${SPLIT_STATE:?}"
+
 # Summary
 echo
 echo "==========================================="

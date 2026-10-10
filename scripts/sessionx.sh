@@ -118,6 +118,13 @@ preview_settings() {
 	preview_ratio=$(cached_tmux_option "@sessionx-preview-ratio" "75%")
 	preview_enabled=$(cached_tmux_option "@sessionx-preview-enabled" "true")
 	list_pane_width=$(cached_tmux_option "@sessionx-list-pane-width" "35%")
+	if [[ -f "$SESSIONX_SPLIT_FILE" ]]; then
+		local saved_width
+		saved_width=$(< "$SESSIONX_SPLIT_FILE")
+		if [[ "$saved_width" =~ ^[0-9]+$ ]] && (( saved_width > 0 && saved_width < 100 )); then
+			list_pane_width="${saved_width}%"
+		fi
+	fi
 }
 
 window_settings() {
@@ -372,9 +379,14 @@ ${INPUT}"
 	LABEL_SESSION="$bind_label:execute($SCRIPT_DIR/set-label.sh {} $DEBUG_MODE $DEBUG_LOG)+reload($RELOAD_CMD)"
 	debug_log "KILL_SESSION binding created: $KILL_SESSION"
 
-	ACCEPT="$bind_accept:replace-query+print-query"
+	SAVE_SPLIT=""
+	if [[ "$preview_enabled" == "true" && "$preview_location" == "right" ]]; then
+		preview_width=$((100 - ${list_pane_width%\%}))
+		SAVE_SPLIT="execute-silent($SCRIPT_DIR/save-split.sh end $preview_width)+"
+	fi
+	ACCEPT="$bind_accept:${SAVE_SPLIT}replace-query+print-query"
 	DELETE="$bind_delete_char:backward-delete-char"
-	EXIT="$bind_exit:abort"
+	EXIT="$bind_exit:${SAVE_SPLIT}abort"
 
 	SELECT_UP="$bind_select_up:up"
 	SELECT_DOWN="$bind_select_down:down"
@@ -456,9 +468,8 @@ ${INPUT}"
 		if [[ "$preview_location" == "right" ]] || [[ "$preview_location" == "left" ]]; then
 			# For side previews, use list-pane-width to determine split
 			# If list is 35%, preview should be 65%
-			list_width_num="${list_pane_width%\%}"
-			preview_width=$((100 - list_width_num))
 			args+=(--preview-window "${preview_location},${preview_width}%,,")
+			args+=(--bind "start:execute-silent($SCRIPT_DIR/save-split.sh start)")
 		else
 			# For top/bottom previews, preview-ratio controls the preview size
 			# This means the list gets (100 - ratio) space

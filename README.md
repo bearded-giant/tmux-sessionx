@@ -74,6 +74,8 @@ set -g @sessionx-preview-ratio '75%'
 # For example, '35%' means session list takes 35%, preview takes 65%
 # To get a longer session list with right/left preview, use a larger width like '50%' or '60%'
 # This helps prevent session timestamps from being cut off
+# Dragging the split with the mouse saves the new width to ~/.local/state/sessionx/list-pane-width
+# (or $XDG_STATE_HOME/sessionx/list-pane-width), which wins over this option; delete that file to go back
 set -g @sessionx-list-pane-width '35%'
 
 # The preview can also be disabled altogether
