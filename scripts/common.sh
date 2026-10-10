@@ -111,12 +111,12 @@ claude_panes() {
 }
 
 claude_status_map() {
-	local session state age
-	declare -A total=() count=() single=()
+	local session state age esc=$'\033'
+	declare -A total=() count=() single=() color=([ask]=31 [ready]=32 [busy]=33)
 	while IFS='|' read -r session _ state age _; do
 		total["$session"]=$((${total["$session"]:-0} + 1))
 		count["$session|$state"]=$((${count["$session|$state"]:-0} + 1))
-		single["$session"]="$state${age:+ $age}"
+		single["$session"]="${esc}[${color[$state]:-0}m$state${age:+ $age}${esc}[0m"
 	done < <(claude_panes -a)
 	for session in "${!total[@]}"; do
 		# string compare: (( )) would re-evaluate the session name as arithmetic
@@ -127,7 +127,7 @@ claude_status_map() {
 		CLAUDE_STATUS["$session"]=""
 		for state in ask ready busy; do
 			if [[ -n "${count["$session|$state"]:-}" ]]; then
-				CLAUDE_STATUS["$session"]+="${CLAUDE_STATUS["$session"]:+ · }$state ${count["$session|$state"]}"
+				CLAUDE_STATUS["$session"]+="${CLAUDE_STATUS["$session"]:+ · }${esc}[${color[$state]:-0}m$state ${count["$session|$state"]}${esc}[0m"
 			fi
 		done
 	done
@@ -135,7 +135,7 @@ claude_status_map() {
 
 render_session_list() {
 	local current="$1" filter_current="$2" sort_order="$3" name_width="$4" pin_color="$5" pinned_only="${6:-false}" claude_status="${7:-on}"
-	local session_data timestamp pinned windows alerts name label formatted_time output row
+	local session_data timestamp pinned windows alerts name label formatted_time output row reset=$'\033[0m'
 	declare -A CLAUDE_STATUS=()
 	if [[ "$claude_status" == "on" ]]; then
 		claude_status_map
@@ -169,7 +169,8 @@ render_session_list() {
 			row+=" | $label"
 		fi
 		if [[ -n "$pinned" ]]; then
-			printf "\033[%sm%s\033[0m\n" "$pin_color" "$row"
+			# status colors end in a reset, which would drop the pin color for the rest of the row
+			printf "\033[%sm%s\033[0m\n" "$pin_color" "${row//"$reset"/"$reset"$'\033['"$pin_color"m}"
 		else
 			printf "%s\n" "$row"
 		fi

@@ -172,23 +172,38 @@ CLAUDE_C="sx-claude-c-$$"
 tmux new-session -d -s "$CLAUDE_C" "$FAKE_BIN/claude -c 'printf \"✳ Germinating… (0s)\\n\"; seq 30; printf \"❯ \\n\"; sleep 60; :'"
 sleep 0.5
 
+plain() { sed $'s/\033\\[[0-9;]*m//g'; }
+
 test_function "lone claude pane shows hook state and idle age" "
-    bash '$SCRIPT_DIR/reload-sessions.sh' x | grep '$CLAUDE_A ' | grep -q '| ask 10m\$'
+    bash '$SCRIPT_DIR/reload-sessions.sh' x | plain | grep '$CLAUDE_A ' | grep -q '| ask 10m\$'
 "
 
 test_function "stale hook busy is corrected by the screen" "
-    bash '$SCRIPT_DIR/reload-sessions.sh' x | grep '$CLAUDE_B ' | grep -q '| ready\$'
+    bash '$SCRIPT_DIR/reload-sessions.sh' x | plain | grep '$CLAUDE_B ' | grep -q '| ready\$'
 "
 
 test_function "spinner in scrollback does not count as busy" "
-    bash '$SCRIPT_DIR/reload-sessions.sh' x | grep '$CLAUDE_C ' | grep -q '| ready\$'
+    bash '$SCRIPT_DIR/reload-sessions.sh' x | plain | grep '$CLAUDE_C ' | grep -q '| ready\$'
 "
 
 PANE_READY=$(tmux split-window -d -P -F '#{pane_id}' -t "$CLAUDE_A" "$FAKE_CLAUDE")
 tmux set-option -p -t "$PANE_READY" @claude_state ready
 
 test_function "several claude panes show counts per state" "
-    bash '$SCRIPT_DIR/reload-sessions.sh' x | grep '$CLAUDE_A ' | grep -q '| ask 1 · ready 1\$'
+    bash '$SCRIPT_DIR/reload-sessions.sh' x | plain | grep '$CLAUDE_A ' | grep -q '| ask 1 · ready 1\$'
+"
+
+test_function "claude states are colored ask red, ready green" "
+    bash '$SCRIPT_DIR/reload-sessions.sh' x | grep -F '$CLAUDE_A ' | grep -qF \$'\\033[31mask 1\\033[0m · \\033[32mready 1\\033[0m'
+"
+
+test_function "pinned row keeps pin color after claude status" "
+    tmux set-option -t '$CLAUDE_A' @sessionx-pinned 1
+    tmux set-option -t '$CLAUDE_A' @sessionx-label lbl
+    out=\$(bash '$SCRIPT_DIR/reload-sessions.sh' x | grep -F '$CLAUDE_A ')
+    tmux set-option -u -t '$CLAUDE_A' @sessionx-pinned
+    tmux set-option -u -t '$CLAUDE_A' @sessionx-label
+    [[ \"\$out\" == *\$'ready 1\\033[0m\\033[1;33m | lbl\\033[0m' ]]
 "
 
 tmux set-option -p -t "$PANE_READY" remain-on-exit on
@@ -196,7 +211,7 @@ tmux respawn-pane -k -t "$PANE_READY" "$FAKE_BIN/claude -c ':'"
 sleep 0.3
 
 test_function "dead claude pane is skipped" "
-    bash '$SCRIPT_DIR/reload-sessions.sh' x | grep '$CLAUDE_A ' | grep -q '| ask 10m\$'
+    bash '$SCRIPT_DIR/reload-sessions.sh' x | plain | grep '$CLAUDE_A ' | grep -q '| ask 10m\$'
 "
 
 tmux kill-session -t "$CLAUDE_A"
