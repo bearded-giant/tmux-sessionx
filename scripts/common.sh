@@ -109,14 +109,14 @@ claude_panes() {
 			else
 				at=$(format_age $((now - at)))
 			fi
-			printf '%s|%s|%s|%s|%s\n' "$session" "$where" "$state" "$at" "$path"
+			printf '%s|%s|%s|%s|%s|%s\n' "$session" "$where" "$state" "$at" "$path" "$pane"
 		done
 }
 
 claude_status_map() {
 	local session state age esc=$'\033'
 	declare -A total=() count=() single=() color=([ask]=31 [ready]=32 [busy]=33)
-	while IFS='|' read -r session _ state age _; do
+	while IFS='|' read -r session _ state age _ _; do
 		total["$session"]=$((${total["$session"]:-0} + 1))
 		count["$session|$state"]=$((${count["$session|$state"]:-0} + 1))
 		single["$session"]="${esc}[${color[$state]:-0}m$state${age:+ $age}${esc}[0m"

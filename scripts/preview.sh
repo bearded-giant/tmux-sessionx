@@ -33,7 +33,7 @@ display_session() {
 		return 1
 	fi
 	if test "$(tmux show-option -gqv @sessionx-claude-status)" != "off"; then
-		claude_panes -s -t "${session_id}" | while IFS='|' read -r _ where state age path; do
+		claude_panes -s -t "${session_id}" | while IFS='|' read -r _ where state age path _; do
 			printf '\033[1;33mclaude %s  %s%s  %s\033[0m\n' "${where}" "${state}" "${age:+ ${age}}" "${path/#"${HOME}"/\~}"
 		done
 	fi
