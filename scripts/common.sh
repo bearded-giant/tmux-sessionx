@@ -68,9 +68,11 @@ claude_screen_state() {
 	local tail
 	# visible screen only: scrollback keeps dead spinners and prompts from earlier claudes
 	tail=$(tmux capture-pane -p -t "$1" 2>/dev/null) || return 0
-	if grep -q -E -e 'Esc to cancel' -e '^[[:space:]]*❯ [0-9]+\. ' <<< "$tail"; then
+	# dialog footer sits at the bottom; higher up it is transcript text
+	if grep -q -E '^[[:space:]]*❯ [0-9]+\. ' <<< "$tail" || grep -v '^[[:space:]]*$' <<< "$tail" | tail -n 8 | grep -q 'Esc to cancel'; then
 		echo "ask"
-	elif grep -q -E -e 'esc to interrupt' -e '^[^[:space:]]+ [A-Z][a-z]+… \(' <<< "$tail"; then
+	# spinner verbs carry accents, hyphens, apostrophes (Sautéing…, Beboppin'…); ⏺ and ❯ lines are transcript
+	elif grep -q -E -e '^[^[:space:]⏺❯]+ [^[:space:]][^…]*… \(' <<< "$tail"; then
 		echo "busy"
 	elif grep -q -e '^❯' -e '⏵⏵' <<< "$tail"; then
 		echo "ready"
@@ -95,10 +97,11 @@ claude_panes() {
 			# a babysit loop idles at its prompt while a sign-off waits on you
 			if [[ -n "$attention" ]]; then
 				state="ask"
-			# esc on a prompt or mid-turn fires no hook, so a hook ask/busy can be stale
-			elif [[ "$state" != "ready" ]]; then
+			# esc on a prompt or mid-turn fires no hook, so a hook ask/busy can be stale;
+			# a Stop hook that blocks still lets the ready hook fire, so ready can be stale too
+			else
 				scraped=$(claude_screen_state "$pane")
-				if [[ -n "$scraped" && "$scraped" != "$state" ]]; then
+				if [[ -n "$scraped" && "$scraped" != "$state" && ("$state" != "ready" || "$scraped" == "busy") ]]; then
 					state="$scraped"
 					at=""
 				fi
